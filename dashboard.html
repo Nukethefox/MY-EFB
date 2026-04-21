@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>MY EFB</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body class="app-shell">
+  <main class="dashboard">
+    <header class="dashboard-header">
+      <h1>Operational Flight Plan Dashboard</h1>
+      <button id="refresh-data-btn" type="button">Reload XML</button>
+    </header>
+
+    <section class="panel">
+      <h2>Main Info</h2>
+      <div class="main-info-layout">
+        <article class="subpanel">
+          <h3>Flight</h3>
+          <div class="grid cols-2" id="main-info-flight"></div>
+        </article>
+        <article class="subpanel">
+          <h3>Airports</h3>
+          <div class="grid cols-2" id="main-info-airports"></div>
+        </article>
+        <article class="subpanel">
+          <h3>Basic time, fuel and distance</h3>
+          <div class="grid cols-2" id="main-info-ops"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>F-PLAN</h2>
+      <div class="fplan-airports" id="fplan-airports"></div>
+      <div class="grid cols-2" id="fplan-grid"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Times and Distances</h2>
+      <div class="timeline-line" id="timeline-line"></div>
+      <div class="grid cols-2 timeline-extra" id="timeline-extra"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Loadsheet</h2>
+      <div class="loadsheet-grid">
+        <article class="subpanel">
+          <h3>Aircraft Info</h3>
+          <div class="grid cols-2" id="loadsheet-aircraft-main"></div>
+          <hr class="section-separator">
+          <div class="grid cols-2 block-gap" id="loadsheet-aircraft-limits"></div>
+        </article>
+        <article class="subpanel">
+          <h3>Weight Info</h3>
+          <div class="grid cols-2" id="loadsheet-weights-payload"></div>
+          <hr class="section-separator">
+          <div class="grid cols-2 block-gap" id="loadsheet-weights-est"></div>
+        </article>
+        <article class="subpanel">
+          <h3>Fuel Info</h3>
+          <div class="grid cols-1" id="loadsheet-fuel"></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>ATC</h2>
+      <div class="atc-actions" id="atc-actions"></div>
+      <div class="atc-box" id="atc-text"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Waypoints</h2>
+      <div id="cruise-winds"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Impacts</h2>
+      <div class="impacts-grid" id="impacts-grid"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Images</h2>
+      <div class="slideshow">
+        <div class="slideshow-header">
+          <span id="img-title"></span>
+        </div>
+        <img id="slideshow-img" />
+        <div class="slideshow-controls">
+          <button id="img-prev">Prev</button>
+          <button id="img-next">Next</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>
