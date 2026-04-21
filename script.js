@@ -62,6 +62,17 @@ function formatSigned(value, unit) {
   return `${numeric} ${unit}`;
 }
 
+function getWeightUnit(root) {
+  const unit = textOf(root, "params units").toUpperCase().trim();
+  if (unit === "LBS" || unit === "LB") return "LB";
+  return "KG";
+}
+
+function formatWeight(root, value) {
+  const unit = getWeightUnit(root);
+  return withUnit(value, unit);
+}
+
 function airportCode(root, baseSelector) {
   const icao = textOf(root, `${baseSelector} icao_code`);
   const iata = textOf(root, `${baseSelector} iata_code`);
@@ -147,7 +158,6 @@ function airportCard(label, data, rwyPerf) {
 <div class="airport-meta">ELEV ${data.elevation} FT</div>
 <div class="airport-meta">
 TRANS ALT ${formatAlt(data.transAlt)}<br>
-TRANS FL ${data.transLevel}
 </div>
 <div class="airport-meta">${data.metar}</div>
 <hr class="section-separator">
@@ -294,7 +304,7 @@ async function reloadDashboardData() {
   try {
     const xmlText = await loadXmlByUsername(username);
     sessionStorage.setItem("efb_xml_payload", xmlText);
-    window.location.reload();
+    location.href = "dashboard.html";
   } catch (error) {
     if (button) button.disabled = false;
     alert(`Unable to reload XML: ${error.message}`);
@@ -327,7 +337,6 @@ function bindLoginForm() {
   const input = document.getElementById("username-input");
   const status = document.getElementById("form-status");
   if (!form || !input || !status) return;
-
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const username = input.value.trim();
@@ -335,7 +344,6 @@ function bindLoginForm() {
       status.textContent = "Please enter a valid username.";
       return;
     }
-
     status.textContent = "Loading OFP XML...";
     try {
       const xmlText = await loadXmlByUsername(username);
@@ -410,7 +418,7 @@ function mainInfo(root) {
   setRows("main-info-ops", [
     { label: "Departure Date/Time", value: departureDateTime(root) },
     { label: "Block Time", value: formatDuration(textOf(root, "times est_block")) },
-    { label: "Block Fuel", value: withUnit(textOf(root, "fuel plan_ramp"), "KG") },
+    { label: "Block Fuel", value: withUnit(textOf(root, "fuel plan_ramp"), textOf(root, "params units")) },
     { label: "Route Distance", value: withUnit(textOf(root, "general route_distance"), "NM") }
   ]);
 }
@@ -434,24 +442,24 @@ function fplan(root) {
   setHtml("fplan-airports", cards.join(""));
 
   setRows("fplan-grid", [
-    { label: "Route", value: textOf(root, "general route_ifps") },
-    { label: "CRZ FL", value: `INITIAL FL${formatFL(textOf(root, "general initial_altitude"))} -- STEPS: ${textOf(root, "general stepclimb_string")}` },    
+    { label: "Route", value: `${textOf(root, "general route_ifps")}<br>ALTN: ${textOf(root, "alternate route_ifps")}`},
+    { label: "CRZ FL", value: `INITIAL FL${formatFL(textOf(root, "general initial_altitude"))}<br>STEPS: ${textOf(root, "general stepclimb_string")}` },
+    { label: "AVG WIND",value: `${formatWindWithUnit(textOf(root, "general avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "general avg_wind_spd"), "KT")}<br>AVG WIND COMP: ${formatWindWithUnit(textOf(root, "general avg_wind_comp"), "KT")}`},    
+    { label: "TROPO", value: `AVG: ${withUnit(textOf(root, "general avg_tropopause"), "FT")}<br>LOWEST: ${minTropoFromFixes(root)}` },
+    { label: "HIGHEST MORA", value: maxMoraFromFixes(root) },
+    { label: "CRZ AVG TEMP", value: cruiseAverageTemp(root) },
     { label: "CI", value: textOf(root, "general costindex") },
     { label: "Mach", value: textOf(root, "general cruise_mach") },
-    { label: "AVG WIND",value: `${formatWindWithUnit(textOf(root, "general avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "general avg_wind_spd"), "KT")} -- AVG WIND COMP: ${formatWindWithUnit(textOf(root, "general avg_wind_comp"), "KT")}`},    
-    { label: "HIGHEST MORA", value: maxMoraFromFixes(root) },
-    { label: "TROPO", value: `AVG ${withUnit(textOf(root, "general avg_tropopause"), "FT")} -- LOWEST ${minTropoFromFixes(root)}` },
-    { label: "CRZ AVG TEMP", value: cruiseAverageTemp(root) }
   ]);
 }
 
 function timeline(root) {
   const points = [
-    { label: "EST DEPT TIME", value: formatEpochUtc(textOf(root, "times est_out")) },
-    { label: "EST TKOF TIME", value: formatEpochUtc(textOf(root, "times est_off")) },
+    { label: "Estimated DEP time", value: formatEpochUtc(textOf(root, "times est_out")) },
+    { label: "Estimated TKOF time", value: formatEpochUtc(textOf(root, "times est_off")) },
     { label: "ENR Time", value: formatDuration(textOf(root, "times est_time_enroute")) },
-    { label: "EST LDG TIME", value: formatEpochUtc(textOf(root, "times est_on")) },
-    { label: "EST ARR TIME", value: formatEpochUtc(textOf(root, "times est_in")) }
+    { label: "Estimated LDG time", value: formatEpochUtc(textOf(root, "times est_on")) },
+    { label: "Estimated ARR time", value: formatEpochUtc(textOf(root, "times est_in")) }
   ];
   const pointsHtml = points.map((point) => `<div class="timeline-point"><div class="timeline-time">${point.value}</div><div class="timeline-dot"></div><div class="timeline-name">${point.label}</div></div>`).join("");
   setHtml("timeline-line", `<div class="timeline-track"></div><div class="timeline-points">${pointsHtml}</div>`);
@@ -468,12 +476,15 @@ function weightStatus(current, limit) {
   return { text: "! Out of range", className: "status-bad" };
 }
 
-function checkedWeight(currentValue, limitValue) {
+function checkedWeight(currentValue, limitValue, unit) {
   const current = Number(currentValue);
   const limit = Number(limitValue);
-  if (!Number.isFinite(current) || !Number.isFinite(limit)) return withUnit(currentValue, "KG");
-  if (current <= limit) return `<span class="status-ok">${current} KG ✓</span>`;
-  return `<span class="status-bad">${current} KG !</span>`;
+  const unitLabel = unit || "KG";
+  if (!Number.isFinite(current) || !Number.isFinite(limit)) {
+    return withUnit(currentValue, unitLabel);
+  }
+  if (current <= limit) return `<span class="status-ok">${current} ${unitLabel} ✓</span>`;
+  return `<span class="status-bad">${current} ${unitLabel} !</span>`;
 }
 
 function loadsheet(root) {
@@ -484,19 +495,19 @@ function loadsheet(root) {
     { label: "Max Passengers", value: textOf(root, "aircraft max_passengers") }
   ]);
   setRows("loadsheet-aircraft-limits", [
-    { label: "OEW", value: withUnit(textOf(root, "weights oew"), "KG") },
-    { label: "MZFW", value: withUnit(textOf(root, "weights max_zfw"), "KG") },
-    { label: "MTOW", value: withUnit(textOf(root, "weights max_tow_struct"), "KG") },
-    { label: "MLDW", value: withUnit(textOf(root, "weights max_ldw"), "KG") }
+    { label: "OEW", value: withUnit(textOf(root, "weights oew"), textOf(root, "params units")) },
+    { label: "MZFW", value: withUnit(textOf(root, "weights max_zfw"), textOf(root, "params units")) },
+    { label: "MTOW", value: withUnit(textOf(root, "weights max_tow_struct"), textOf(root, "params units")) },
+    { label: "MLDW", value: withUnit(textOf(root, "weights max_ldw"), textOf(root, "params units")) }
   ]);
 
   setRows("loadsheet-weights-payload", [
-    { label: "Pax Count Actual", value: textOf(root, "weights pax_count_actual") },
-    { label: "Cargo (baggage)", value: withUnit(textOf(root, "weights cargo"), "KG") },
-    { label: "Pax weight", value: withUnit(textOf(root, "weights pax_weight"), "KG") },
-    { label: "Bag weight", value: withUnit(textOf(root, "weights bag_weight"), "KG") },
-    { label: "Freight", value: withUnit(textOf(root, "weights freight_added"), "KG") },
-    { label: "Total Payload", value: withUnit(textOf(root, "weights payload"), "KG") }
+    { label: "Pax Count", value: textOf(root, "weights pax_count_actual") },
+    { label: "Cargo (baggage)", value: withUnit(textOf(root, "weights cargo"), textOf(root, "params units")) },
+    { label: "Pax weight (as set on simbrief)", value: withUnit(textOf(root, "weights pax_weight"), textOf(root, "params units")) },
+    { label: "Bag weight (as set on simbrief)", value: withUnit(textOf(root, "weights bag_weight"), textOf(root, "params units")) },
+    { label: "Freight", value: withUnit(textOf(root, "weights freight_added"), textOf(root, "params units")) },
+    { label: "Total Payload", value: withUnit(textOf(root, "weights payload"), textOf(root, "params units")) }
   ]);
 
   const estZfw = numberOf(root, "weights est_zfw");
@@ -506,21 +517,21 @@ function loadsheet(root) {
   const maxTow = numberOf(root, "weights max_tow_struct");
   const maxLdw = numberOf(root, "weights max_ldw");
   setHtml("loadsheet-weights-est", [
-    row("EZFW", checkedWeight(textOf(root, "weights est_zfw"), textOf(root, "weights max_zfw"))),
-    row("ETOW", checkedWeight(textOf(root, "weights est_tow"), textOf(root, "weights max_tow_struct"))),
-    row("ELW", checkedWeight(textOf(root, "weights est_ldw"), textOf(root, "weights max_ldw")))
+    row("EZFW", checkedWeight(textOf(root, "weights est_zfw"), textOf(root, "weights max_zfw"), getWeightUnit(root))),
+    row("ETOW", checkedWeight(textOf(root, "weights est_tow"), textOf(root, "weights max_tow_struct"), getWeightUnit(root))),
+    row("ELW", checkedWeight(textOf(root, "weights est_ldw"), textOf(root, "weights max_ldw"), getWeightUnit(root)))
   ].join(""));
 
   const fuelRows = [
-    { item: "Taxi Out Fuel", kg: withUnit(textOf(root, "fuel taxi"), "KG"), time: formatDuration(textOf(root, "times taxi_out")), isBlock: false },
-    { item: "Trip/Enroute Fuel", kg: withUnit(textOf(root, "fuel enroute_burn"), "KG"), time: formatDuration(textOf(root, "times est_time_enroute")), isBlock: false },
-    { item: "Contingency Fuel", kg: withUnit(textOf(root, "fuel contingency"), "KG"), time: formatDuration(textOf(root, "times contfuel_time")), isBlock: false },
-    { item: "ALTN Fuel", kg: withUnit(textOf(root, "fuel alternate_burn"), "KG"), time: formatDuration(textOf(root, "alternate ete")), isBlock: false },
-    { item: "Final Reserve Fuel", kg: withUnit(textOf(root, "fuel reserve"), "KG"), time: formatDuration(textOf(root, "times reserve_time")), isBlock: false },
-    { item: "ETOPS Fuel", kg: withUnit(textOf(root, "fuel etops"), "KG"), time: formatDuration(textOf(root, "times etopsfuel_time")), isBlock: false },
-    { item: "Extra Fuel", kg: withUnit(textOf(root, "fuel extra"), "KG"), time: formatDuration(textOf(root, "times extrafuel_time")), isBlock: false },
-    { item: "Block Fuel", kg: withUnit(textOf(root, "fuel plan_ramp"), "KG"), time: formatDuration(textOf(root, "times est_block")), isBlock: true },
-    { item: "MAX FUEL CAP", kg: withUnit(textOf(root, "fuel max_tanks"), "KG"), time: formatDuration("-"), isBlock: true }
+    { item: "Taxi Out Fuel", kg: withUnit(textOf(root, "fuel taxi"), textOf(root, "params units")), time: formatDuration(textOf(root, "times taxi_out")), isBlock: false },
+    { item: "Trip/Enroute Fuel", kg: withUnit(textOf(root, "fuel enroute_burn"), textOf(root, "params units")), time: formatDuration(textOf(root, "times est_time_enroute")), isBlock: false },
+    { item: "Contingency Fuel", kg: withUnit(textOf(root, "fuel contingency"), textOf(root, "params units")), time: formatDuration(textOf(root, "times contfuel_time")), isBlock: false },
+    { item: "ALTN Fuel", kg: withUnit(textOf(root, "fuel alternate_burn"), textOf(root, "params units")), time: formatDuration(textOf(root, "alternate ete")), isBlock: false },
+    { item: "Final Reserve Fuel", kg: withUnit(textOf(root, "fuel reserve"), textOf(root, "params units")), time: formatDuration(textOf(root, "times reserve_time")), isBlock: false },
+    { item: "ETOPS Fuel", kg: withUnit(textOf(root, "fuel etops"), textOf(root, "params units")), time: formatDuration(textOf(root, "times etopsfuel_time")), isBlock: false },
+    { item: "Extra Fuel", kg: withUnit(textOf(root, "fuel extra"), textOf(root, "params units")), time: formatDuration(textOf(root, "times extrafuel_time")), isBlock: false },
+    { item: "Block Fuel", kg: withUnit(textOf(root, "fuel plan_ramp"), textOf(root, "params units")), time: formatDuration(textOf(root, "times est_block")), isBlock: true },
+    { item: "MAX FUEL CAP", kg: withUnit(textOf(root, "fuel max_tanks"), textOf(root, "params units")), time: formatDuration("-"), isBlock: true }
   ];
   const fuelTableBody = fuelRows.map((rowData) => `<tr class="${rowData.isBlock ? "fuel-row-block" : ""}"><td>${rowData.item}</td><td>${rowData.kg}</td><td>${rowData.time}</td></tr>`).join("");
   setHtml("loadsheet-fuel", `<div class="fuel-table-box"><table class="fuel-table"><thead><tr><th>ITEM</th><th>KG</th><th>TIME</th></tr></thead><tbody>${fuelTableBody}</tbody></table></div>`);
@@ -563,10 +574,23 @@ function cruiseWinds(root) {
   setHtml("cruise-winds", `<details class="winds-wrap"><summary class="winds-toggle">Show/Hide Waypoints (${selected.length})</summary><div class="winds-table-box"><table class="winds-table"><thead><tr><th>FIX</th><th>ALTITUDE_FEET</th><th>OAT</th><th>WIND DIR/SPD</th><th>TROPOPAUSE_FEET</th><th>MORA</th></tr></thead><tbody>${rows}</tbody></table></div></details>`);
 }
 
-function impactCard(title, burn, time) {
+function impactCard(title, burn, time, unit) {
   const burnClass = impactClass(burn);
   const timeClass = impactClass(time);
-  return `<article class="impact-card"><div class="impact-title">${title}</div><div class="impact-row"><span>Burn</span><span class="${burnClass}">${formatSigned(burn, "KG")}</span></div><div class="impact-row"><span>Time</span><span class="${timeClass}">${formatSignedDuration(time)}</span></div></article>`;
+  const u = unit || "KG";
+  return `
+    <article class="impact-card">
+      <div class="impact-title">${title}</div>
+      <div class="impact-row">
+        <span>Burn</span>
+        <span class="${burnClass}">${formatSigned(burn, u)}</span>
+      </div>
+      <div class="impact-row">
+        <span>Time</span>
+        <span class="${timeClass}">${formatSignedDuration(time)}</span>
+      </div>
+    </article>
+  `;
 }
 
 function impacts(root) {
@@ -574,13 +598,36 @@ function impacts(root) {
     { title: "6000 Below", path: "impacts minus_6000ft" },
     { title: "4000 Below", path: "impacts minus_4000ft" },
     { title: "2000 Below", path: "impacts minus_2000ft" }
-  ].map((rowItem) => impactCard(rowItem.title, textOf(root, `${rowItem.path} burn_difference`), textOf(root, `${rowItem.path} time_difference`))).join("");
+  ].map((rowItem) =>
+    impactCard(
+      rowItem.title,
+      textOf(root, `${rowItem.path} burn_difference`),
+      textOf(root, `${rowItem.path} time_difference`),
+      getWeightUnit(root)
+    )
+  ).join("");
   const aboveRows = [
     { title: "2000 Above", path: "impacts plus_2000ft" },
     { title: "4000 Above", path: "impacts plus_4000ft" },
     { title: "6000 Above", path: "impacts plus_6000ft" }
-  ].map((rowItem) => impactCard(rowItem.title, textOf(root, `${rowItem.path} burn_difference`), textOf(root, `${rowItem.path} time_difference`))).join("");
-  const html = `<article class="impact-group"><div class="impact-title">Below Cruise Level</div>${belowRows}</article><article class="impact-group"><div class="impact-title">Above Cruise Level</div>${aboveRows}</article>`;
+  ].map((rowItem) =>
+    impactCard(
+      rowItem.title,
+      textOf(root, `${rowItem.path} burn_difference`),
+      textOf(root, `${rowItem.path} time_difference`),
+      getWeightUnit(root)
+    )
+  ).join("");
+  const html = `
+    <article class="impact-group">
+      <div class="impact-title">Below Cruise Level</div>
+      ${belowRows}
+    </article>
+    <article class="impact-group">
+      <div class="impact-title">Above Cruise Level</div>
+      ${aboveRows}
+    </article>
+  `;
   setHtml("impacts-grid", html);
 }
 
@@ -631,6 +678,8 @@ function bindSlideshow() {
 
 
 function renderDashboard() {
+  if (!window.location.pathname.includes("dashboard.html")) return;
+
   const xmlText = getXmlFromStorage();
   if (!xmlText) {
     window.location.href = "index.html";
