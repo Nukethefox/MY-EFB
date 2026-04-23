@@ -129,11 +129,10 @@ function getRunwayData(root, phase) {
         tora: rwy.querySelector("length_tora")?.textContent,
         toda: rwy.querySelector("length_toda")?.textContent,
         asda: rwy.querySelector("length_asda")?.textContent,
-        lda: rwy.querySelector("length_lda")?.textContent
+        lda: rwy.querySelector("length_lda")?.textContent,
       };
     }
   }
-
   return null;
 }
 
@@ -160,8 +159,10 @@ function airportCard(label, data, rwyPerf) {
 TRANS ALT ${formatAlt(data.transAlt)}<br>
 </div>
 <div class="airport-meta">${data.metar}</div>
+<br>
+<div class="airport-meta">${data.taf}</div>
 <hr class="section-separator">
-${runwayPerformanceHtml(rwyPerf)}
+<!-- ${runwayPerformanceHtml(rwyPerf)} */ -->
 </article>
 `;
 }
@@ -187,7 +188,8 @@ function airportData(root, selector) {
     elevation: textOf(root, `${selector} elevation`),
     transAlt: textOf(root, `${selector} trans_alt`),
     transLevel: formatTransLevel(textOf(root, `${selector} trans_level`)),
-    metar: textOf(root, `${selector} metar`)
+    metar: textOf(root, `${selector} metar`),
+    taf: textOf(root, `${selector} taf`)
   };
 }
 
@@ -200,7 +202,8 @@ function enrouteAltData(root) {
     elevation: textOf(root, "enroute_altn altn elevation"),
     transAlt: textOf(root, "enroute_altn altn trans_alt"),
     transLevel: formatTransLevel(textOf(root, "enroute_altn altn trans_level")),
-    metar: textOf(root, "enroute_altn altn metar")
+    metar: textOf(root, "enroute_altn altn metar"),
+    taf: textOf(root, "enroute_altn altn metar")
   };
 }
 
@@ -216,6 +219,111 @@ function formatSignedDuration(valueInSeconds) {
   const seconds = absSeconds % 60;
   if (hours > 0) return `${sign}${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   return `${sign}${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function altimeterToHpa(inhg) {
+  if (!inhg) return "";
+  const hpa = Math.round(parseFloat(inhg) * 33.863889532611);
+  return `${inhg} inHg (${hpa} hPa)`;
+}
+
+function getPlannedRunway(root, phase) {
+  const planned = textOf(root, `tlr ${phase} conditions planned_runway`);
+  if (!planned) return null;
+  const runways = root.querySelectorAll(`tlr > ${phase} > runway`);
+  for (const rwy of runways) {
+    const id = rwy.querySelector("identifier")?.textContent?.trim();
+    if (id === planned) return rwy;
+  }
+  return null;
+}
+
+function takeoffPerformanceHtml(root) {
+
+  const cond = root.querySelector("tlr > takeoff > conditions");
+  const rwy = getPlannedRunway(root, "takeoff");
+
+  if (!cond || !rwy) return "";
+
+  const elevation = parseInt(rwy.querySelector("elevation")?.textContent || 0);
+
+  const thrustReduction = elevation + 1500;
+  const acceleration = elevation + 3000;
+
+  const bleed = rwy.querySelector("bleed_setting")?.textContent || "";
+  const antiIce = rwy.querySelector("anti_ice_setting")?.textContent || "";
+
+  const bleedAntiIce = `${bleed} / ${antiIce}`;
+
+  return `
+<div class="airport-meta">RUNWAY: ${rwy.querySelector("identifier")?.textContent}</div>
+<div class="airport-meta">HEADWIND: ${rwy.querySelector("headwind_component")?.textContent} kts</div>
+<div class="airport-meta">CROSSWIND: ${rwy.querySelector("crosswind_component")?.textContent} kts</div>
+<div class="airport-meta">SURFACE: ${cond.querySelector("surface_condition")?.textContent}</div>
+<div class="airport-meta">TEMP: ${cond.querySelector("temperature")?.textContent} °C</div>
+<div class="airport-meta">QNH: ${altimeterToHpa(cond.querySelector("altimeter")?.textContent)}</div>
+
+<hr class="section-separator">
+
+<div class="airport-meta">FLAPS: ${rwy.querySelector("flap_setting")?.textContent}</div>
+<div class="airport-meta">BLEED: ${bleed}</div>
+<div class="airport-meta">ANTI ICE: ${antiIce}</div>
+
+<div class="airport-meta">THRUST: ${rwy.querySelector("thrust_setting")?.textContent}</div>
+<div class="airport-meta">FLEX: ${rwy.querySelector("flex_temperature")?.textContent} °C</div>
+
+<div class="airport-meta">V1: ${rwy.querySelector("speeds_v1")?.textContent} kts</div>
+<div class="airport-meta">VR: ${rwy.querySelector("speeds_vr")?.textContent} kts</div>
+<div class="airport-meta">V2: ${rwy.querySelector("speeds_v2")?.textContent} kts</div>
+
+<div class="airport-meta">${rwy.querySelector("speeds_other_id")?.textContent}: ${rwy.querySelector("speeds_other")?.textContent} kts</div>
+
+<div class="airport-meta">THR REDUCTION: ${thrustReduction} ft</div>
+<div class="airport-meta">ACCELERATION: ${acceleration} ft</div>
+
+<hr class="section-separator">
+<div class="airport-meta">TORA: ${rwy.querySelector("length_tora")?.textContent}</div>
+<div class="airport-meta">ASDA: ${rwy.querySelector("length_asda")?.textContent}</div>
+<div class="airport-meta">DECISION DISTANCE: ${rwy.querySelector("distance_decide")?.textContent} m</div>
+<div class="airport-meta">STOP DISTANCE: ${rwy.querySelector("distance_reject")?.textContent} m</div>
+<div class="airport-meta">STOP MARGIN: ${rwy.querySelector("distance_margin")?.textContent} m</div>
+`;
+}
+
+function landingPerformanceHtml(root) {
+
+  const cond = root.querySelector("tlr > landing > conditions");
+  const rwy = getPlannedRunway(root, "landing");
+
+  if (!cond || !rwy) return "";
+
+  const surface = cond.querySelector("surface_condition")?.textContent;
+
+  const distanceNode =
+    surface === "wet"
+      ? root.querySelector("tlr > landing > distance_wet")
+      : root.querySelector("tlr > landing > distance_dry");
+
+  return `
+<div class="airport-meta">RUNWAY: ${rwy.querySelector("identifier")?.textContent}</div>
+<div class="airport-meta">HEADWIND: ${rwy.querySelector("headwind_component")?.textContent} kts</div>
+<div class="airport-meta">CROSSWIND: ${rwy.querySelector("crosswind_component")?.textContent} kts</div>
+<div class="airport-meta">SURFACE: ${surface}</div>
+<div class="airport-meta">TEMP: ${cond.querySelector("temperature")?.textContent} °C</div>
+<div class="airport-meta">QNH: ${altimeterToHpa(cond.querySelector("altimeter")?.textContent)}</div>
+<br>
+<div class="airport-meta">ILS FRQ: ${rwy.querySelector("ils_frequency")?.textContent} mHz</div>
+<div class="airport-meta">MAX ELEV TDZ: ${rwy.querySelector("elevation")?.textContent} ft</div>
+<hr class="section-separator">
+<p class="airport-meta">With the following data...</p>
+<div class="airport-meta">FLAPS: ${distanceNode.querySelector("flap_setting")?.textContent}</div>
+<div class="airport-meta">BRAKES: ${distanceNode.querySelector("brake_setting")?.textContent}</div>
+<div class="airport-meta">VREF: ${distanceNode.querySelector("speeds_vref")?.textContent} kts</div>
+<p class="airport-meta">Resulting distances will be...</p>
+<div class="airport-meta">LDA: ${rwy.querySelector("length_lda")?.textContent}</div>
+<div class="airport-meta">ACTUAL NEEDED DISTANCE: ${distanceNode.querySelector("actual_distance")?.textContent} m</div>
+<div class="airport-meta">FACTORED DISTANCE: ${distanceNode.querySelector("factored_distance")?.textContent} m</div>
+`;
 }
 
 function impactClass(value) {
@@ -517,9 +625,9 @@ function loadsheet(root) {
   const maxTow = numberOf(root, "weights max_tow_struct");
   const maxLdw = numberOf(root, "weights max_ldw");
   setHtml("loadsheet-weights-est", [
-    row("EZFW", checkedWeight(textOf(root, "weights est_zfw"), textOf(root, "weights max_zfw"), getWeightUnit(root))),
-    row("ETOW", checkedWeight(textOf(root, "weights est_tow"), textOf(root, "weights max_tow_struct"), getWeightUnit(root))),
-    row("ELW", checkedWeight(textOf(root, "weights est_ldw"), textOf(root, "weights max_ldw"), getWeightUnit(root)))
+    row("EST ZFW", checkedWeight(textOf(root, "weights est_zfw"), textOf(root, "weights max_zfw"), getWeightUnit(root))),
+    row("EST TOW", checkedWeight(textOf(root, "weights est_tow"), textOf(root, "weights max_tow_struct"), getWeightUnit(root))),
+    row("EST LDW", checkedWeight(textOf(root, "weights est_ldw"), textOf(root, "weights max_ldw"), getWeightUnit(root)))
   ].join(""));
 
   const fuelRows = [
@@ -620,11 +728,11 @@ function impacts(root) {
   ).join("");
   const html = `
     <article class="impact-group">
-      <div class="impact-title">Below Cruise Level</div>
+      <div class="impact-title">Cruise Level Decrease</div>
       ${belowRows}
     </article>
     <article class="impact-group">
-      <div class="impact-title">Above Cruise Level</div>
+      <div class="impact-title">Cruise Level Increase</div>
       ${aboveRows}
     </article>
   `;
@@ -702,6 +810,11 @@ function renderDashboard() {
   currentIndex = 0;
   renderImage();
   bindSlideshow();
+  document.querySelector("#takeoffPerf").innerHTML =
+  takeoffPerformanceHtml(xml);
+document.querySelector("#landingPerf").innerHTML =
+  landingPerformanceHtml(xml);
+  
 }
 
 document.addEventListener("DOMContentLoaded", () => {
