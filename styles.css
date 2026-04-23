@@ -164,6 +164,12 @@ button:hover {
   gap: 14px;
 }
 
+.perf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  gap: 14px;
+}
+
 .grid {
   display: grid;
   gap: 10px;
