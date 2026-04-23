@@ -249,6 +249,7 @@ function takeoffPerformanceHtml(root) {
 
   const thrustReduction = elevation + 1500;
   const acceleration = elevation + 3000;
+  const acceleration2 = elevation + 1500;
 
   const bleed = rwy.querySelector("bleed_setting")?.textContent || "";
   const antiIce = rwy.querySelector("anti_ice_setting")?.textContent || "";
@@ -277,9 +278,11 @@ function takeoffPerformanceHtml(root) {
 <div class="airport-meta">V2: ${rwy.querySelector("speeds_v2")?.textContent} kts</div>
 
 <div class="airport-meta">${rwy.querySelector("speeds_other_id")?.textContent}: ${rwy.querySelector("speeds_other")?.textContent} kts</div>
+<br>
+<div class="airport-meta">THR REDUCTION/ENG OUT ACC: ${thrustReduction} ft</div>
+<div class="airport-meta">ACCELERATION (NADP1): ${acceleration} ft</div>
+<div class="airport-meta">ACCELERATION (NADP2): ${acceleration2} ft</div>
 
-<div class="airport-meta">THR REDUCTION: ${thrustReduction} ft</div>
-<div class="airport-meta">ACCELERATION: ${acceleration} ft</div>
 
 <hr class="section-separator">
 <div class="airport-meta">TORA: ${rwy.querySelector("length_tora")?.textContent}</div>
