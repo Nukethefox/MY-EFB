@@ -10,6 +10,7 @@
   --accent-press: #3368d4;
   --ok: #50d88a;
   --warn: #ff6b6b;
+  --alert: #fff200;
 }
 
 .airac-ok {
@@ -508,4 +509,171 @@ button:hover {
 .slideshow-controls {
   display: flex;
   gap: 10px;
+}
+
+#notam-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+#notam-controls select {
+  background: var(--subpanel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+}
+
+#notam-controls select:hover {
+  border-color: var(--accent);
+}
+
+#notam-controls select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+#notam-list {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+#notam-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+#notam-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+#notam-list::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+.notam-card {
+  background: var(--subpanel);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.notam-card.critical {
+  border-left-color: var(--warn);
+}
+
+.notam-card.operational {
+  border-left-color: var(--alert);
+}
+
+.notam-card.info {
+  border-left-color: var(--accent);
+}
+
+.notam-header {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.notam-id {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.notam-airport {
+  background: var(--panel);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.notam-category {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.notam-valid {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.notam-text {
+  line-height: 1.5;
+  white-space: normal;
+  color: var(--text);
+}
+
+.notam-map-link {
+  display: inline-block;
+  background: var(--accent);
+  color: white;
+  text-decoration: none;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  margin-left: 5px;
+  vertical-align: middle;
+  transition: opacity 0.2s;
+}
+
+.notam-map-link:hover {
+  opacity: 0.8;
+}
+
+.leaflet-tooltip.map-tooltip-wide {
+  background-color: rgba(17, 23, 34, 0.95) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  padding: 5px 12px !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5) !important;
+  
+  min-width: 300px; 
+  max-width: 450px;
+  white-space: wrap;
+}
+
+.leaflet-tooltip-notam-fix {
+  background-color: rgba(11, 15, 23, 0.98) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  padding: 10px 15px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6) !important;
+  
+  width: 500px; 
+  white-space: normal !important; 
+  overflow-wrap: break-word;
+}
+
+.map-tooltip-notam b {
+  display: block;
+  margin-bottom: 5px;
+  text-decoration: underline;
+}
+
+.leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before {
+  border-top-color: var(--border) !important;
+}
+
+.map-tooltip-wide span {
+  margin: 0 5px;
+  border-left: 1px solid var(--border);
+  padding-left: 8px;
 }
