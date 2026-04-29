@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>MY EFB</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="script.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="app-shell">
   <main class="dashboard">
@@ -110,6 +112,45 @@
         </div>
       </div>
     </section>
+
+    <section class="panel">
+      <h2>NOTAMS</h2>
+      <div id="notam-controls">
+
+<select id="notam-airport">
+<option value="all">All Airports</option>
+<option value="origin">Origin</option>
+<option value="destination">Destination</option>
+<option value="alternate">Alternate</option>
+<option value="enroute">Enroute</option>
+</select>
+
+<select id="notam-time">
+<option value="active">Active (Flight Window)</option>
+<option value="future">Future</option>
+<option value="all">All</option>
+</select>
+
+<select id="notam-category">
+<option value="all">All Categories</option>
+</select>
+
+<select id="notam-relevance">
+<option value="all">All</option>
+<option value="critical">Critical</option>
+<option value="operational">Operational</option>
+<option value="info">Info</option>
+</select>
+
+</div>
+
+<div id="notam-list"></div>
+    </section>
+
+    <section class="panel">
+  <h2>Live Flight Map & NOTAMS</h2>
+  <div id="map" style="height: 500px; border-radius: 8px; border: 1px solid var(--border);"></div>
+</section> 
 
   </main>
 </body>
