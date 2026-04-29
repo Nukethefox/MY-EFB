@@ -181,6 +181,21 @@ function formatFL(value) {
   return String(Math.trunc(num / 100));
 }
 
+function calculateTransitionLevel(taRaw, qnhInHg) {
+  const ta = parseInt(taRaw, 10);
+  const qnh = Math.round(parseFloat(qnhInHg) * 33.863889532611);
+  if (isNaN(ta) || isNaN(qnh)) return "-";
+  let adjustment = 0;
+  if (qnh >= 1032 && qnh <= 1050) adjustment = 500;
+  else if (qnh >= 1014 && qnh <= 1031) adjustment = 1000;
+  else if (qnh >= 996 && qnh <= 1013) adjustment = 1500;
+  else if (qnh >= 978 && qnh <= 995) adjustment = 2000;
+  else if (qnh >= 960 && qnh <= 977) adjustment = 2500;
+  else if (qnh >= 942 && qnh <= 959) adjustment = 3000;
+  const tlValue = ta + adjustment;
+  return `FL${Math.floor(tlValue / 100)}`;
+}
+
 function airportData(root, selector) {
   return {
     code: airportCode(root, selector),
@@ -301,11 +316,21 @@ function landingPerformanceHtml(root) {
   if (!cond || !rwy) return "";
 
   const surface = cond.querySelector("surface_condition")?.textContent;
+  const qnhRaw = cond.querySelector("altimeter")?.textContent;
+  const taRaw = textOf(root, "destination trans_alt");
+  const transitionLevel = calculateTransitionLevel(taRaw, qnhRaw);
 
   const distanceNode =
     surface === "wet"
       ? root.querySelector("tlr > landing > distance_wet")
       : root.querySelector("tlr > landing > distance_dry");
+  
+  const ldaStr = rwy.querySelector("length_lda")?.textContent || "0";
+  const factoredStr = distanceNode.querySelector("factored_distance")?.textContent || "0";
+  
+  const ldaNum = parseInt(ldaStr.replace(/[^0-9]/g, ''), 10);
+  const factoredNum = parseInt(factoredStr.replace(/[^0-9]/g, ''), 10);
+  const margin = ldaNum - factoredNum;
 
   return `
 <div class="airport-meta">RUNWAY: ${rwy.querySelector("identifier")?.textContent}</div>
@@ -313,19 +338,24 @@ function landingPerformanceHtml(root) {
 <div class="airport-meta">CROSSWIND: ${rwy.querySelector("crosswind_component")?.textContent} kts</div>
 <div class="airport-meta">SURFACE: ${surface}</div>
 <div class="airport-meta">TEMP: ${cond.querySelector("temperature")?.textContent} °C</div>
-<div class="airport-meta">QNH: ${altimeterToHpa(cond.querySelector("altimeter")?.textContent)}</div>
+<div class="airport-meta">QNH: ${altimeterToHpa(qnhRaw)}</div>
 <br>
 <div class="airport-meta">ILS FRQ: ${rwy.querySelector("ils_frequency")?.textContent} mHz</div>
 <div class="airport-meta">MAX ELEV TDZ: ${rwy.querySelector("elevation")?.textContent} ft</div>
+<div class="airport-meta">DECISION HEIGHT: CHECK CHARTS</div>
+<div class="airport-meta">TRANS LEVEL: ${transitionLevel}</div>
+<br>
+<div class="airport-meta">Be Aware: the Transition Level given above is a generic value to be used offline. <br>If flying online, check ATIS.</div>
 <hr class="section-separator">
 <p class="airport-meta">With the following data...</p>
 <div class="airport-meta">FLAPS: ${distanceNode.querySelector("flap_setting")?.textContent}</div>
 <div class="airport-meta">BRAKES: ${distanceNode.querySelector("brake_setting")?.textContent}</div>
 <div class="airport-meta">VREF: ${distanceNode.querySelector("speeds_vref")?.textContent} kts</div>
 <p class="airport-meta">Resulting distances will be...</p>
-<div class="airport-meta">LDA: ${rwy.querySelector("length_lda")?.textContent}</div>
+<div class="airport-meta">LDA: ${rwy.querySelector("length_lda")?.textContent} m</div>
 <div class="airport-meta">ACTUAL NEEDED DISTANCE: ${distanceNode.querySelector("actual_distance")?.textContent} m</div>
 <div class="airport-meta">FACTORED DISTANCE: ${distanceNode.querySelector("factored_distance")?.textContent} m</div>
+<div class="airport-meta">MARGIN: ${margin} m</div>
 `;
 }
 
@@ -473,7 +503,7 @@ function setHtml(id, html) {
   node.innerHTML = html;
 }
 
-const AIRAC_BASE_DATE = new Date(Date.UTC(2023, 0, 26)); // 19 Jan 2023
+const AIRAC_BASE_DATE = new Date(Date.UTC(2023, 0, 26));
 const AIRAC_BASE_CYCLE = 2301;
 function getCurrentAIRAC() {
   const now = new Date();
@@ -509,21 +539,33 @@ function airacStatus(ofpAirac) {
   return `<span class="airac-warn">${ofpAirac} (OUTDATED! CURRENT ${current})</span>`;
 }
 
+function flightTypeText(type) {
+  const map = {
+    s: "Scheduled",
+    n: "Non-scheduled",
+    g: "General Aviation",
+    m: "Military",
+    x: "Training"
+  };
+  return map[(type || "").toLowerCase()] || type;
+}
+
 function mainInfo(root) {
   setRows("main-info-flight", [
     { label: "Flight Number", value: `${textOf(root, "general icao_airline")}${textOf(root, "general flight_number")}` },
     { label: "Callsign", value: textOf(root, "atc callsign") },
     { label: "OFP Date/Time", value: formatEpochUtc(textOf(root, "params time_generated")) },
     { label: "OFP Version", value: textOf(root, "general release") },
-    { label: "AIRAC", value: `${airacStatus(textOf(root, "params airac"))}`}
+    { label: "AIRAC", value: `${airacStatus(textOf(root, "params airac"))}`},
+    { label: "Flight Type", value: flightTypeText(textOf(root, "api_params flighttype")) }
   ]);
 
-  setRows("main-info-airports", [
-    { label: "Departure", value: airportCode(root, "origin") },
-    { label: "Destination", value: airportCode(root, "destination") },
-    { label: "TKOF ALTN", value: airportCode(root, "takeoff_altn") },
-    { label: "ENR ALTN", value: enrouteAltCode(root) },
-    { label: "ALTN", value: airportCode(root, "alternate") }
+setRows("main-info-airports", [
+    { label: "Departure", value: `${airportCode(root, "origin")}<br><small style="font-size: 11px;">${textOf(root, "origin name")}</small>` },
+    { label: "Destination", value: `${airportCode(root, "destination")}<br><small style="font-size: 11px;">${textOf(root, "destination name")}</small>` },
+    { label: "TKOF ALTN", value: `${airportCode(root, "takeoff_altn")}<br><small style="font-size: 11px;">${textOf(root, "takeoff_altn name")}</small>` },
+    { label: "ENR ALTN", value: `${enrouteAltCode(root)}` },
+    { label: "ALTN", value: `${airportCode(root, "alternate")}<br><small style="font-size: 11px;">${textOf(root, "alternate name")}</small>` }
   ]);
 
   setRows("main-info-ops", [
@@ -558,7 +600,7 @@ function fplan(root) {
     { label: "AVG WIND",value: `${formatWindWithUnit(textOf(root, "general avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "general avg_wind_spd"), "KT")}<br>AVG WIND COMP: ${formatWindWithUnit(textOf(root, "general avg_wind_comp"), "KT")}`},    
     { label: "TROPO", value: `AVG: ${withUnit(textOf(root, "general avg_tropopause"), "FT")}<br>LOWEST: ${minTropoFromFixes(root)}` },
     { label: "HIGHEST MORA", value: maxMoraFromFixes(root) },
-    { label: "CRZ AVG TEMP", value: cruiseAverageTemp(root) },
+    { label: "AVG CRZ TEMP", value: cruiseAverageTemp(root) },
     { label: "CI", value: textOf(root, "general costindex") },
     { label: "Mach", value: textOf(root, "general cruise_mach") },
   ]);
@@ -574,7 +616,6 @@ function timeline(root) {
   ];
   const pointsHtml = points.map((point) => `<div class="timeline-point"><div class="timeline-time">${point.value}</div><div class="timeline-dot"></div><div class="timeline-name">${point.label}</div></div>`).join("");
   setHtml("timeline-line", `<div class="timeline-track"></div><div class="timeline-points">${pointsHtml}</div>`);
-
   setRows("timeline-extra", [
     { label: "Block Time", value: formatDuration(textOf(root, "times est_block")) },
     { label: "Route Distance", value: withUnit(textOf(root, "general route_distance"), "NM") }
@@ -655,11 +696,27 @@ function atcSection(root) {
   atcText.textContent = safeText(textOf(root, "atc flightplan_text"));
   if (atcActions) {
     const ivaoLink = textOf(root, "prefile ivao link");
+    const vatsimLink = textOf(root, "prefile vatsim link");
+    const posconLink = textOf(root, "prefile poscon link");
+    const pilotedgeLink = textOf(root, "prefile pilotedge link");
+    const apocLink = textOf(root, "prefile apoc link");
+    let buttons = "";
     if (ivaoLink !== "-") {
-      atcActions.innerHTML = `<a class="atc-link" href="${ivaoLink}" target="_blank" rel="noopener noreferrer">Create IVAO FPL</a>`;
-    } else {
-      atcActions.innerHTML = "";
+      buttons += `<a class="atc-link" style="border: 1px solid white;" href="${ivaoLink}" target="_blank" rel="noopener noreferrer">Create IVAO FPL</a>`;
     }
+    if (vatsimLink !== "-") {
+      buttons += `<a class="atc-link" style="border: 1px solid white;" href="${vatsimLink}" target="_blank" rel="noopener noreferrer">Create VATSIM FPL</a>`;
+    }
+    if (posconLink !== "-") {
+      buttons += `<a class="atc-link" style="border: 1px solid white;" href="${posconLink}" target="_blank" rel="noopener noreferrer">Create POSCON FPL</a>`;
+    }
+    if (pilotedgeLink !== "-") {
+      buttons += `<a class="atc-link" style="border: 1px solid white;" href="${pilotedgeLink}" target="_blank" rel="noopener noreferrer">Create PilotEdge FPL</a>`;
+    }
+    if (apocLink !== "-") {
+      buttons += `<a class="atc-link" style="border: 1px solid white;" href="${apocLink}" target="_blank" rel="noopener noreferrer">Create APOC FPL</a>`;
+    }
+    atcActions.innerHTML = buttons;
   }
 }
 
@@ -788,6 +845,345 @@ function bindSlideshow() {
 
 
 
+function parseNotams(root) {
+  const all = [];
+  
+  function parseStructured(section, sourceLabel) {
+    const nodes = root.querySelectorAll(section + " notam");
+    const icao = textOf(root, `${section} icao_code`);
+    nodes.forEach(n => {
+      all.push({
+        id: textOf(n, "notam_id"),
+        airport: textOf(n, "location_icao"),
+        category: textOf(n, "notam_qcode_subject"),
+        text: textOf(n, "notam_html"),
+        effective: new Date(textOf(n, "date_effective")),
+        expire: new Date(textOf(n, "date_expire")),
+        source: icao, 
+        sourceType: sourceLabel,
+        relevance: detectRelevance(textOf(n, "notam_html"))
+      });
+    });
+  }
+
+  parseStructured("origin", "origin");
+  parseStructured("destination", "destination");
+  parseStructured("alternate", "alternate");
+
+  const enroute = root.querySelectorAll("notams notamdrec");
+  enroute.forEach(n => {
+    const name = textOf(n, "icao_name");
+    const icao = textOf(n, "icao_code");
+    all.push({
+      id: textOf(n, "notam_id"),
+      airport: icao,
+      category: "AREA",
+      text: textOf(n, "notam_report") || textOf(n, "notam_text"),
+      effective: parseNotamDate(textOf(n, "notam_effective_dtg")),
+      expire: parseNotamDate(textOf(n, "notam_expire_dtg")),
+      source: `ENROUTE: ${name}`, 
+      sourceType: "enroute",
+      relevance: detectRelevance(textOf(n, "notam_report"))
+    });
+  });
+  return dedupeNotams(all);
+}
+
+function parseNotamDate(str) {
+  if(!str) return null;
+  const year = str.slice(0,4);
+  const month = str.slice(4,6);
+  const day = str.slice(6,8);
+  const hour = str.slice(8,10);
+  const min = str.slice(10,12);
+  return new Date(`${year}-${month}-${day}T${hour}:${min}:00Z`);
+}
+
+function dedupeNotams(list) {
+  const map = new Map();
+  list.forEach(n => {
+    if(!map.has(n.id)) map.set(n.id,n);
+  });
+  return Array.from(map.values());
+}
+
+function detectRelevance(text) {
+  if (!text) return "info";
+  const t = text.replace(/\u00A0/g, ' ').toUpperCase();
+
+  const criticalRx = /\b(RWY|TWY|GATE)\b.*?CLSD|SNOW|VOLCANIC|OBST|OBSTRUCTION/;
+  if (criticalRx.test(t)) return "critical";
+
+  const operationalRx = /TWY\s+LTD|TWY|ALS|LEAD|LIGHT|LGT|PAPI|VASI|CENTERLINE|EDGE|ILS|NDB|DVOR|VOR|ADF|GLIDE\s+PATH|GP|U\/S|CWY|SWY|THR|THRESHOLD|DECLARED\s+DISTANCES|CLEARWAY|STOPWAY/;
+  if (operationalRx.test(t)) return "operational";
+
+  return "info";
+}
+
+function getFlightWindow(root) {
+  return {
+    out: new Date(Number(textOf(root, "times est_out")) * 1000),
+    off: new Date(Number(textOf(root, "times est_off")) * 1000),
+    on: new Date(Number(textOf(root, "times est_on")) * 1000),
+    in: new Date(Number(textOf(root, "times est_in")) * 1000)
+  };
+}
+
+function filterNotams(list, filters, window) {
+  return list.filter(n => {
+    if (filters.airport !== "all" && n.source !== filters.airport) return false;
+    if (filters.relevance !== "all" && n.relevance !== filters.relevance) return false;
+    if (filters.category !== "all" && n.category !== filters.category) return false;
+
+    if (filters.time === "active") {
+      let startLimit = window.out;
+      let endLimit = window.in;
+
+      if (n.sourceType === "origin") {
+        startLimit = window.out;
+        endLimit = window.off;
+      } else if (n.sourceType === "destination") {
+        startLimit = window.on;
+        endLimit = window.in;
+      } else if (n.sourceType === "enroute") {
+        startLimit = window.off;
+        endLimit = window.on;
+      }
+
+      if (n.expire < startLimit || n.effective > endLimit) return false;
+    }
+
+    if (filters.time === "future") {
+      if (n.effective <= window.in) return false;
+    }
+
+    return true;
+  });
+}
+
+function formatNotamText(text) {
+  if (!text) return "-";
+  
+  const replacements = {
+    "RWY": "RUNWAY",
+    "TWY": "TAXIWAY",
+    "CLSD": "CLOSED",
+    "AVBL": "AVAILABLE",
+    "PPR": "Prior Permission Required",
+    "U/S": "UNSERVICEABLE",
+    "LTD": "LIMITED",
+    "ACFT": "AIRCRAFT",
+    "WI": "Within"
+  };
+
+  let formatted = text;
+  for (const [abbr, full] of Object.entries(replacements)) {
+    const regex = new RegExp(`\\b${abbr}\\b`, "g");
+    formatted = formatted.replace(regex, full);
+  }
+
+  return formatted;
+}
+
+function linkifyCoordinates(text) {
+  const coordRegex = /(\d{2})(\d{2})(\d{2})([NS])\s+(\d{3})(\d{2})(\d{2})([EW])/g;
+
+  return text.replace(coordRegex, (match, latD, latM, latS, latH, lonD, lonM, lonS, lonH) => {
+    let lat = parseInt(latD) + parseInt(latM)/60 + parseInt(latS)/3600;
+    let lon = parseInt(lonD) + parseInt(lonM)/60 + parseInt(lonS)/3600;
+    
+    if (latH === 'S') lat *= -1;
+    if (lonH === 'W') lon *= -1;
+    return `${match} <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" class="notam-map-link">📍 VIEW ON MAP</a>`;
+  });
+}
+
+function renderNotams(list) {
+  const container = document.getElementById("notam-list");
+
+  if (!list.length) {
+    container.innerHTML = "<div>No NOTAMs</div>";
+    return;
+  }
+
+  container.innerHTML = list.map(n => {
+    const locationDisplay = n.sourceType === "enroute" ? n.source : n.airport;
+    const cleanedText = linkifyCoordinates(formatNotamText(n.text));
+
+    return `
+<div class="notam-card ${n.relevance}">
+
+<div class="notam-header">
+<span class="notam-id">${n.id}</span>
+<span class="notam-airport">${locationDisplay}</span>
+<span class="notam-category">${n.category}</span>
+</div>
+
+<div class="notam-valid">
+VALID: ${formatNotamDate(n.effective)} → ${formatNotamDate(n.expire)}
+</div>
+
+<div class="notam-text">
+${cleanedText}
+</div>
+
+</div>
+`;
+  }).join("");
+}
+
+
+
+function formatNotamDate(date){
+
+  if(!date) return "-";
+
+  const d = String(date.getUTCDate()).padStart(2,"0");
+  const m = String(date.getUTCMonth()+1).padStart(2,"0");
+  const y = date.getUTCFullYear();
+
+  const h = String(date.getUTCHours()).padStart(2,"0");
+  const min = String(date.getUTCMinutes()).padStart(2,"0");
+
+  return `${d}/${m}/${y} ${h}:${min} UTC`;
+
+}
+
+let flightMap; 
+
+function initFlightMap(root) {
+  const mapElement = document.getElementById('map');
+  if (!mapElement) return;
+
+  const originLat = textOf(root, "origin pos_lat");
+  const originLon = textOf(root, "origin pos_long");
+  flightMap = L.map('map').setView([originLat, originLon], 5);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 20
+  }).addTo(flightMap);
+
+  const waypoints = root.querySelectorAll("navlog fix");
+  const routeCoords = [];
+  
+  waypoints.forEach(fix => {
+    const lat = parseFloat(textOf(fix, "pos_lat"));
+    const lon = parseFloat(textOf(fix, "pos_long"));
+    if (!isNaN(lat) && !isNaN(lon)) {
+      routeCoords.push([lat, lon]);
+
+      const ident = textOf(fix, "ident");
+      const oat = textOf(fix, "oat");
+      const windDir = textOf(fix, "wind_dir");
+      const windSpd = textOf(fix, "wind_spd");
+      const tropo = textOf(fix, "tropopause_feet");
+      const mora = textOf(fix, "mora");
+
+      L.circleMarker([lat, lon], { 
+        radius: 4, 
+        color: '#ffffff', 
+        fillColor: '#ffffff', 
+        fillOpacity: 1 
+      })
+      .bindTooltip(`
+        <div class="map-tooltip-wide">
+          <strong>${ident}</strong>  
+          <span>OAT: ${oat}°C</span>  
+          <span>WIND: ${windDir}/${windSpd}</span>  
+          <span>TROPO: ${tropo}</span>  
+          <span>MORA: ${mora}</span>
+        </div>
+      `, { sticky: true, direction: 'top' })
+      .addTo(flightMap);
+    }
+  });
+
+  L.polyline(routeCoords, { color: '#ffffff', weight: 2, opacity: 0.8 }).addTo(flightMap);
+
+  drawNotamsOnMap(root);
+}
+
+function drawNotamsOnMap(root) {
+  const allNotams = parseNotams(root);
+  const coordRegex = /(\d{2})(\d{2})(\d{2})([NS])\s+(\d{3})(\d{2})(\d{2})([EW])/g;
+  const radiusRegex = /RADIUS\s+(\d+)\s*M/i;
+
+  allNotams.forEach(n => {
+    const coordsFound = [];
+    let match;
+    
+    while ((match = coordRegex.exec(n.text)) !== null) {
+      let lat = parseInt(match[1]) + parseInt(match[2])/60 + parseInt(match[3])/3600;
+      let lon = parseInt(match[5]) + parseInt(match[6])/60 + parseInt(match[7])/3600;
+      if (match[4] === 'S') lat *= -1;
+      if (match[8] === 'W') lon *= -1;
+      coordsFound.push([lat, lon]);
+    }
+
+    if (coordsFound.length === 0) return;
+
+    const color = n.relevance === 'critical' ? '#ff6b6b' : '#ffffff';
+    const tooltipHtml = `<div class="map-tooltip-notam"><b>${n.id}</b>: ${formatNotamText(n.text)}</div>`;
+    let shape;
+
+    if (coordsFound.length > 1) {
+      shape = L.polygon(coordsFound, {
+        color: color, fillColor: color, fillOpacity: 0.2, weight: 2
+      }).addTo(flightMap);
+    } else {
+      const radiusMatch = n.text.match(radiusRegex);
+      const radiusValue = radiusMatch ? parseInt(radiusMatch[1]) : 1000; 
+      shape = L.circle(coordsFound[0], {
+        color: color, fillColor: color, fillOpacity: 0.2, radius: radiusValue, weight: 1
+      }).addTo(flightMap);
+    }
+
+    shape.bindTooltip(tooltipHtml, { sticky: true, className: 'leaflet-tooltip-notam-fix' });
+  });
+}
+
+function initNotams(root) {
+  const all = parseNotams(root);
+  const window = getFlightWindow(root);
+
+  const locSelect = document.getElementById("notam-airport");
+  const uniqueSources = [...new Map(all.map(n => [n.source, n])).values()];
+  
+  locSelect.innerHTML = '<option value="all">ALL LOCATIONS</option>';
+  uniqueSources.forEach(n => {
+    const opt = document.createElement("option");
+    opt.value = n.source;
+    opt.textContent = n.source;
+    locSelect.appendChild(opt);
+  });
+
+  const categorySet = new Set(all.map(n => n.category).filter(Boolean));
+  const catSelect = document.getElementById("notam-category");
+  catSelect.innerHTML = '<option value="all">ALL CATEGORIES</option>';
+  categorySet.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    catSelect.appendChild(opt);
+  });
+
+  const filters = { airport: "all", time: "active", category: "all", relevance: "all" };
+
+  function update() {
+    filters.airport = document.getElementById("notam-airport").value;
+    filters.time = document.getElementById("notam-time").value;
+    filters.category = document.getElementById("notam-category").value;
+    filters.relevance = document.getElementById("notam-relevance").value;
+    renderNotams(filterNotams(all, filters, window));
+  }
+
+  document.querySelectorAll("#notam-controls select").forEach(el => el.addEventListener("change", update));
+  update();
+}
+
+
 function renderDashboard() {
   if (!window.location.pathname.includes("dashboard.html")) return;
 
@@ -817,6 +1213,8 @@ function renderDashboard() {
   takeoffPerformanceHtml(xml);
 document.querySelector("#landingPerf").innerHTML =
   landingPerformanceHtml(xml);
+  initNotams(xml);
+  initFlightMap(xml);
   
 }
 
