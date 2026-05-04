@@ -6,70 +6,92 @@
   <title>MY EFB</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <script src="script.js" defer></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="app-shell">
+
+<nav class="sidebar-nav">
+    <a href="#section-main"><span class="material-symbols-outlined">dashboard</span><label>Main Info</label></a>
+    <a href="#section-fplan"><span class="material-symbols-outlined">flight_takeoff</span><label>Flight Plan</label></a>
+    <a href="#section-winds"><span class="material-symbols-outlined">directions</span><label>Waypoints</label></a>
+    <a href="#section-loadsheet"><span class="material-symbols-outlined">balance</span><label>Loadsheet</label></a>
+    <a href="#section-perf"><span class="material-symbols-outlined">speed</span><label>Performance</label></a>
+    <a href="#section-impacts"><span class="material-symbols-outlined">bar_chart</span><label>Impacts</label></a>
+    <a href="#section-atc"><span class="material-symbols-outlined">cell_tower</span><label>ATC F-PLAN</label></a>
+    <a href="#section-images"><span class="material-symbols-outlined">map</span><label>Charts</label></a>
+    <a href="#section-notams"><span class="material-symbols-outlined">warning</span><label>NOTAMs</label></a>
+    <a href="#section-map"><span class="material-symbols-outlined">explore</span><label>Map</label></a>
+  </nav>
+
   <main class="dashboard">
     <header class="dashboard-header">
       <h1>Operational Flight Plan Dashboard</h1>
-      <button id="refresh-data-btn" type="button">Reload XML</button>
+      <button id="refresh-data-btn" type="button">Reload from SimBrief</button>
     </header>
+    <br>
 
-    <section class="panel">
-      <h2>Main Info</h2>
+    <section id="section-main" class="panel full-screen">
+      <h2>Main Info:</h2>
       <div class="main-info-layout">
         <article class="subpanel">
-          <h3>Flight</h3>
+          <h3>Flight:</h3>
           <div class="grid cols-2" id="main-info-flight"></div>
         </article>
         <article class="subpanel">
-          <h3>Airports</h3>
+          <h3>Airports:</h3>
           <div class="grid cols-2" id="main-info-airports"></div>
         </article>
         <article class="subpanel">
-          <h3>Time, fuel and distance</h3>
+          <h3>Total time, fuel and distance:</h3>
           <div class="grid cols-2" id="main-info-ops"></div>
         </article>
       </div>
-    </section>
-
-    <section class="panel">
-      <h2>F-PLAN Breakdown</h2>
-      <div class="fplan-airports" id="fplan-airports"></div>
-      <div class="grid cols-2" id="fplan-grid"></div>
-    </section>
-
-    <section class="panel">
-      <h2>Timestamps Breakdown</h2>
+      <br>
+      <br>
+      <h2>Timestamps Breakdown:</h2>
       <div class="timeline-line" id="timeline-line"></div>
-      <div class="grid cols-2 timeline-extra" id="timeline-extra"></div>
     </section>
 
-    <section class="panel">
-      <h2>Loadsheet</h2>
+    <section id="section-fplan" class="panel full-screen">
+      <h2>Main Flightplan Breakdown:</h2>
+      <div class="grid cols-2" id="fplan-grid"></div>
+      <details class="winds-wrap" style="margin-top: 15px;">
+        <summary class="winds-toggle">Airports Info</summary>
+        <div class="fplan-airports" id="fplan-airports" style="padding: 10px;"></div>
+      </details>
+    </section>
+
+    <section id="section-winds" class="panel full-screen">
+      <h2>Waypoints Table:</h2>
+      <div id="cruise-winds"></div>
+    </section>
+
+    <section id="section-loadsheet" class="panel full-screen">
+      <h2>Initial loadsheet:</h2>
       <div class="loadsheet-grid">
         <article class="subpanel">
-          <h3>Aircraft Info</h3>
+          <h3>Aircraft Info:</h3>
           <div class="grid cols-2" id="loadsheet-aircraft-main"></div>
           <hr class="section-separator">
           <div class="grid cols-2 block-gap" id="loadsheet-aircraft-limits"></div>
         </article>
         <article class="subpanel">
-          <h3>Weight Info</h3>
+          <h3>Weight & Load Breakdown:</h3>
           <div class="grid cols-2" id="loadsheet-weights-payload"></div>
           <hr class="section-separator">
           <div class="grid cols-2 block-gap" id="loadsheet-weights-est"></div>
         </article>
         <article class="subpanel">
-          <h3>Fuel Info</h3>
+          <h3>Fuel Breakdown:</h3>
           <div class="grid cols-1" id="loadsheet-fuel"></div>
         </article>
       </div>
     </section>
 
-    <section class="panel">
-      <h2>Performance Predictions</h2>
+    <section id="section-perf" class="panel full-screen">
+      <h2>Initial Performance Predictions:</h2>
       <p>NOTE: The following calculations are based on <b><u>Generic Parameters</u></b> from the SimBrief OFP. Please reffer to your sim/addon Perf Calculator for more precise values.</p>
       <div class="perf-grid">
         <article class="subpanel">
@@ -83,38 +105,35 @@
       </div>
     </section>
 
-    <section class="panel">
-      <h2>ATC</h2>
+    <section id="section-impacts" class="panel full-screen">
+      <h2>Impacts:</h2>
+      <div class="impacts-grid" id="impacts-grid"></div>
+    </section>
+
+    <section id="section-atc" class="panel full-screen">
+      <h2>ATC Flightplan:</h2>
       <div class="atc-actions" id="atc-actions"></div>
       <div class="atc-box" id="atc-text"></div>
     </section>
 
-    <section class="panel">
-      <h2>Waypoints</h2>
-      <div id="cruise-winds"></div>
-    </section>
 
-    <section class="panel">
-      <h2>Impacts</h2>
-      <div class="impacts-grid" id="impacts-grid"></div>
-    </section>
-
-    <section class="panel">
-      <h2>Images</h2>
+    <section id="section-images" class="panel">
+      <h2>Images:</h2>
       <div class="slideshow">
         <div class="slideshow-header">
           <span id="img-title"></span>
         </div>
-        <img id="slideshow-img" />
         <div class="slideshow-controls">
           <button id="img-prev">Prev</button>
           <button id="img-next">Next</button>
         </div>
+        <div class="img-wrapper"><img id="slideshow-img" /></div>
+        
       </div>
     </section>
 
-    <section class="panel">
-      <h2>NOTAMS</h2>
+    <section id="section-notams" class="panel full-screen">
+      <h2>NOTAMS:</h2>
       <div id="notam-controls">
 
 <select id="notam-airport">
@@ -147,9 +166,9 @@
 <div id="notam-list"></div>
     </section>
 
-    <section class="panel">
+    <section id="section-map" class="panel full-screen">
   <h2>Live Flight Map & NOTAMS</h2>
-  <div id="map" style="height: 500px; border-radius: 8px; border: 1px solid var(--border);"></div>
+  <div id="map" style="height: 500px; flex-grow: 1; border-radius: 8px; border: 1px solid var(--border);"></div>
 </section> 
 
   </main>
