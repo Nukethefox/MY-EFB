@@ -79,7 +79,7 @@ function airportCode(root, baseSelector) {
   if (icao === "-" && iata === "-") return "-";
   if (icao === "-") return `-/${iata}`;
   if (iata === "-") return `${icao}/-`;
-  return `${icao}/${iata}`;
+  return `${icao} / ${iata}`;
 }
 
 function departureDateTime(root) {
@@ -148,23 +148,40 @@ function runwayPerformanceHtml(rwy) {
 }
 
 function airportCard(label, data, rwyPerf) {
+  const metarBtn = (data.metar && data.metar !== "-") 
+    ? `<a href="https://metar-taf.com/metar/${data.icao}" target="_blank" class="notam-map-link" style="display:inline-block; margin-top:5px;"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">clear_day</span> DECODED METAR</a>` 
+    : "";
+    
+  const tafBtn = (data.taf && data.taf !== "-") 
+    ? `<a href="https://metar-taf.com/taf/${data.icao}" target="_blank" class="notam-map-link" style="display:inline-block; margin-top:5px;"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">cloud</span> DECODED TAF</a>` 
+    : "";
+
   return `
-<article class="airport-card">
-<div class="airport-title">${label}</div>
-<div class="airport-main">${data.code}</div>
-<div class="airport-rwy">RWY ${data.rwy}</div>
-<hr class="section-separator">
-<div class="airport-meta">ELEV ${data.elevation} FT</div>
-<div class="airport-meta">
-TRANS ALT ${formatAlt(data.transAlt)}<br>
-</div>
-<div class="airport-meta">${data.metar}</div>
-<br>
-<div class="airport-meta">${data.taf}</div>
-<hr class="section-separator">
-<!-- ${runwayPerformanceHtml(rwyPerf)} */ -->
-</article>
-`;
+    <article class="airport-card">
+      <div class="airport-title">${label}</div>
+      <div class="airport-main">${data.code}</div>
+      <div class="airport-rwy">RWY ${data.rwy}</div>
+      <hr class="section-separator">
+      <div class="airport-meta">ELEV ${data.elevation} FT</div>
+      <div class="airport-meta">
+        TRANS ALT ${formatAlt(data.transAlt)}<br>
+      </div>
+      <hr class="section-separator">
+      <div class="airport-meta">
+        <strong>METAR:</strong><br>
+        ${data.metar}
+        <br>${metarBtn}
+      </div>
+      <br>
+      <div class="airport-meta">
+        <strong>TAF:</strong><br>
+        ${data.taf}
+        <br>${tafBtn}
+      </div>
+      <hr class="section-separator">
+      <!-- ${runwayPerformanceHtml(rwyPerf)} -->
+    </article>
+  `;
 }
 
 function formatTransLevel(rawValue) {
@@ -199,6 +216,7 @@ function calculateTransitionLevel(taRaw, qnhInHg) {
 function airportData(root, selector) {
   return {
     code: airportCode(root, selector),
+    icao: textOf(root, `${selector} icao_code`),
     rwy: textOf(root, `${selector} plan_rwy`),
     elevation: textOf(root, `${selector} elevation`),
     transAlt: textOf(root, `${selector} trans_alt`),
@@ -213,12 +231,13 @@ function enrouteAltData(root) {
   if (direct.code !== "-") return direct;
   return {
     code: enrouteAltCode(root),
+    icao: textOf(root, "enroute_altn altn icao_code"),
     rwy: textOf(root, "enroute_altn altn plan_rwy"),
     elevation: textOf(root, "enroute_altn altn elevation"),
     transAlt: textOf(root, "enroute_altn altn trans_alt"),
     transLevel: formatTransLevel(textOf(root, "enroute_altn altn trans_level")),
     metar: textOf(root, "enroute_altn altn metar"),
-    taf: textOf(root, "enroute_altn altn metar")
+    taf: textOf(root, "enroute_altn altn taf")
   };
 }
 
@@ -553,7 +572,7 @@ function flightTypeText(type) {
 function mainInfo(root) {
   setRows("main-info-flight", [
     { label: "Flight Number", value: `${textOf(root, "general icao_airline")}${textOf(root, "general flight_number")}` },
-    { label: "Callsign", value: textOf(root, "atc callsign") },
+    { label: "ATC Callsign", value: textOf(root, "atc callsign") },
     { label: "OFP Date/Time", value: formatEpochUtc(textOf(root, "params time_generated")) },
     { label: "OFP Version", value: textOf(root, "general release") },
     { label: "AIRAC", value: `${airacStatus(textOf(root, "params airac"))}`},
@@ -655,8 +674,8 @@ function loadsheet(root) {
 
   setRows("loadsheet-weights-payload", [
     { label: "Pax Count", value: textOf(root, "weights pax_count_actual") },
-    { label: "Cargo (baggage)", value: withUnit(textOf(root, "weights cargo"), textOf(root, "params units")) },
     { label: "Pax weight (as set on simbrief)", value: withUnit(textOf(root, "weights pax_weight"), textOf(root, "params units")) },
+    { label: "Cargo (baggage)", value: withUnit(textOf(root, "weights cargo"), textOf(root, "params units")) },
     { label: "Bag weight (as set on simbrief)", value: withUnit(textOf(root, "weights bag_weight"), textOf(root, "params units")) },
     { label: "Freight", value: withUnit(textOf(root, "weights freight_added"), textOf(root, "params units")) },
     { label: "Total Payload", value: withUnit(textOf(root, "weights payload"), textOf(root, "params units")) }
@@ -678,7 +697,7 @@ function loadsheet(root) {
     { item: "Taxi Out Fuel", kg: withUnit(textOf(root, "fuel taxi"), textOf(root, "params units")), time: formatDuration(textOf(root, "times taxi_out")), isBlock: false },
     { item: "Trip/Enroute Fuel", kg: withUnit(textOf(root, "fuel enroute_burn"), textOf(root, "params units")), time: formatDuration(textOf(root, "times est_time_enroute")), isBlock: false },
     { item: "Route Reserve/Contingency", kg: withUnit(textOf(root, "fuel contingency"), textOf(root, "params units")), time: formatDuration(textOf(root, "times contfuel_time")), isBlock: false },
-    { item: "ALTN Fuel", kg: withUnit(textOf(root, "fuel alternate_burn"), textOf(root, "params units")), time: formatDuration(textOf(root, "alternate ete")), isBlock: false },
+    { item: "Alternate Fuel", kg: withUnit(textOf(root, "fuel alternate_burn"), textOf(root, "params units")), time: formatDuration(textOf(root, "alternate ete")), isBlock: false },
     { item: "Final Reserve Fuel", kg: withUnit(textOf(root, "fuel reserve"), textOf(root, "params units")), time: formatDuration(textOf(root, "times reserve_time")), isBlock: false },
     { item: "ETOPS Fuel", kg: withUnit(textOf(root, "fuel etops"), textOf(root, "params units")), time: formatDuration(textOf(root, "times etopsfuel_time")), isBlock: false },
     { item: "Extra Fuel", kg: withUnit(textOf(root, "fuel extra"), textOf(root, "params units")), time: formatDuration(textOf(root, "times extrafuel_time")), isBlock: false },
@@ -728,18 +747,21 @@ function cruiseWinds(root) {
   });
   const rows = selected.map((fix) => {
     const ident = textOf(fix, "ident");
+    const timeTotal = formatDuration(textOf(fix, "time_total")); 
+    const efob = textOf(fix, "fuel_plan_onboard");
     const altitude = textOf(fix, "altitude_feet");
     const oat = textOf(fix, "oat");
-    const wind = `${textOf(fix, "wind_dir")}/${textOf(fix, "wind_spd")}`;
+    const wind = `${textOf(fix, "wind_dir")} / ${textOf(fix, "wind_spd")}`;
     const tropopause = textOf(fix, "tropopause_feet");
     const mora = textOf(fix, "mora");
-    return `<tr><td>${ident}</td><td>${altitude}</td><td>${oat}</td><td>${wind}</td><td>${tropopause}</td><td>${mora}</td></tr>`;
+    return `<tr><td>${ident}</td><td>${timeTotal}</td><td>${efob}</td><td>${altitude}</td><td>${oat}</td><td>${wind}</td><td>${tropopause}</td><td>${mora}</td></tr>`;
   }).join("");
+
   if (!rows) {
-    setHtml("cruise-winds", `<div class="winds-wrap"><div class="winds-table-box"><table class="winds-table"><thead><tr><th>FIX</th><th>ALTITUDE_FEET</th><th>OAT</th><th>WIND DIR/SPD</th><th>TROPOPAUSE_FEET</th><th>MORA</th></tr></thead><tbody><tr><td colspan="6">-</td></tr></tbody></table></div></div>`);
+    setHtml("cruise-winds", `<div class="winds-wrap" open><div class="winds-table-box"><table class="winds-table"><thead><tr><th>FIX</th><th>ELAPSED TIME</th><th>EST REM FUEL</th><th>ALTITUDE (FT)</th><th>OAT (ºC)</th><th>WIND DIR/SPD</th><th>TROPO (FT)</th><th>MORA</th></tr></thead><tbody><tr><td colspan="8">-</td></tr></tbody></table></div></div>`);
     return;
   }
-  setHtml("cruise-winds", `<details class="winds-wrap"><summary class="winds-toggle">Show/Hide Waypoints (${selected.length})</summary><div class="winds-table-box"><table class="winds-table"><thead><tr><th>FIX</th><th>ALTITUDE_FEET</th><th>OAT</th><th>WIND DIR/SPD</th><th>TROPOPAUSE_FEET</th><th>MORA</th></tr></thead><tbody>${rows}</tbody></table></div></details>`);
+  setHtml("cruise-winds", `<details class="winds-wrap" open><summary class="winds-toggle">Show/Hide Waypoints (${selected.length})</summary><div class="winds-table-box"><table class="winds-table"><thead><tr><th>FIX</th><th>ELAPSED TIME</th><th>EST REM FUEL</th><th>ALTITUDE (FT)</th><th>OAT (ºC)</th><th>WIND DIR/SPD</th><th>TROPO (FT)</th><th>MORA</th></tr></thead><tbody>${rows}</tbody></table></div></details>`);
 }
 
 function impactCard(title, burn, time, unit) {
@@ -762,30 +784,34 @@ function impactCard(title, burn, time, unit) {
 }
 
 function impacts(root) {
-  const belowRows = [
-    { title: "6000 Below", path: "impacts minus_6000ft" },
-    { title: "4000 Below", path: "impacts minus_4000ft" },
-    { title: "2000 Below", path: "impacts minus_2000ft" }
-  ].map((rowItem) =>
-    impactCard(
-      rowItem.title,
+  const initialAltRaw = textOf(root, "general initial_altitude");
+  const initialAltBase = parseInt(initialAltRaw, 10) / 100;
+const belowRows = [
+    { diff: 6000, title: "6000 Below", path: "impacts minus_6000ft" },
+    { diff: 4000, title: "4000 Below", path: "impacts minus_4000ft" },
+    { diff: 2000, title: "2000 Below", path: "impacts minus_2000ft" }
+  ].map((rowItem) => {
+    const finalAlt = initialAltBase - (rowItem.diff / 100);
+    return impactCard(
+      `${rowItem.title} (FL${finalAlt})`,
       textOf(root, `${rowItem.path} burn_difference`),
       textOf(root, `${rowItem.path} time_difference`),
       getWeightUnit(root)
-    )
-  ).join("");
-  const aboveRows = [
-    { title: "2000 Above", path: "impacts plus_2000ft" },
-    { title: "4000 Above", path: "impacts plus_4000ft" },
-    { title: "6000 Above", path: "impacts plus_6000ft" }
-  ].map((rowItem) =>
-    impactCard(
-      rowItem.title,
+    );
+  }).join("");
+const aboveRows = [
+    { diff: 2000, title: "2000 Above", path: "impacts plus_2000ft" },
+    { diff: 4000, title: "4000 Above", path: "impacts plus_4000ft" },
+    { diff: 6000, title: "6000 Above", path: "impacts plus_6000ft" }
+  ].map((rowItem) => {
+    const finalAlt = initialAltBase + (rowItem.diff / 100);
+    return impactCard(
+      `${rowItem.title} (FL${finalAlt})`,
       textOf(root, `${rowItem.path} burn_difference`),
       textOf(root, `${rowItem.path} time_difference`),
       getWeightUnit(root)
-    )
-  ).join("");
+    );
+  }).join("");
   const html = `
     <article class="impact-group">
       <div class="impact-title">Cruise Level Decrease</div>
@@ -994,7 +1020,7 @@ function linkifyCoordinates(text) {
     
     if (latH === 'S') lat *= -1;
     if (lonH === 'W') lon *= -1;
-    return `${match} <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" class="notam-map-link">📍 VIEW ON MAP</a>`;
+    return `${match} <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" class="notam-map-link"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">moved_location</span> VIEW ON MAP</a>`;
   });
 }
 
@@ -1075,6 +1101,8 @@ function initFlightMap(root) {
       routeCoords.push([lat, lon]);
 
       const ident = textOf(fix, "ident");
+      const timeTotal = formatDuration(textOf(fix, "time_total"));
+const efob = textOf(fix, "fuel_plan_onboard"); 
       const oat = textOf(fix, "oat");
       const windDir = textOf(fix, "wind_dir");
       const windSpd = textOf(fix, "wind_spd");
@@ -1090,6 +1118,8 @@ function initFlightMap(root) {
       .bindTooltip(`
         <div class="map-tooltip-wide">
           <strong>${ident}</strong>  
+          <span>TIME: ${timeTotal}</span>
+          <span>EFOB: ${efob}</span>
           <span>OAT: ${oat}°C</span>  
           <span>WIND: ${windDir}/${windSpd}</span>  
           <span>TROPO: ${tropo}</span>  
@@ -1183,6 +1213,30 @@ function initNotams(root) {
   update();
 }
 
+function initScrollSpy() {
+  const sections = document.querySelectorAll("section[id]");
+  const navLinks = document.querySelectorAll(".sidebar-nav a");
+
+  window.addEventListener("scroll", () => {
+    let current = "";
+    sections.forEach((section) => {
+      const sectionTop = section.offsetTop;
+      if (pageYOffset >= sectionTop - 60) {
+        current = section.getAttribute("id");
+      }
+    });
+
+    navLinks.forEach((link) => {
+      link.classList.remove("active-nav");
+      if (link.getAttribute("href").includes(current)) {
+        link.style.background = "var(--accent)";
+      } else {
+        link.style.background = "transparent";
+      }
+    });
+  });
+}
+
 
 function renderDashboard() {
   if (!window.location.pathname.includes("dashboard.html")) return;
@@ -1215,6 +1269,7 @@ document.querySelector("#landingPerf").innerHTML =
   landingPerformanceHtml(xml);
   initNotams(xml);
   initFlightMap(xml);
+  initScrollSpy();
   
 }
 
