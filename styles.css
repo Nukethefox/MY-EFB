@@ -13,6 +13,14 @@
   --alert: #fff200;
 }
 
+@font-face {
+  font-family: 'B612cockpitFONT'; 
+  src: url('B612/B612-Regular.ttf') format('truetype'); 
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap; 
+}
+
 .airac-ok {
   color: var(--ok);
   font-weight: 600;
@@ -31,7 +39,7 @@ html, body {
   margin: 0;
   width: 100%;
   min-height: 100%;
-  font-family: "Inter", "Segoe UI", sans-serif;
+  font-family: 'B612cockpitFONT', sans-serif;
   background: var(--bg);
   color: var(--text);
 }
@@ -41,7 +49,102 @@ body {
 }
 
 .app-shell {
-  padding: 16px;
+  padding: 16px 16px 16px 80px;
+}
+
+.full-screen {
+  min-height: calc(100vh - 40px); 
+  display: flex;
+  flex-direction: column;
+  justify-content: center; 
+  margin-bottom: 40px;
+}
+
+#section-images {
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+#section-map, #section-notams {
+  display: flex;
+  flex-direction: column;
+}
+
+#section-notams {
+  height: calc(100vh - 40px); 
+  min-height: calc(100vh - 40px);
+  overflow: hidden; 
+  padding-top: 10px; 
+}
+
+#section-notams h2 {
+  margin-top: 0; 
+  margin-bottom: 10px;
+}
+
+.sidebar-nav {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 60px; 
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; 
+  padding: 20px 10px;
+  z-index: 1200;
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+}
+
+.sidebar-nav:hover {
+  width: 200px; 
+}
+
+.sidebar-nav a {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 10px;
+  padding-left: 5px;
+  text-decoration: none;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: background 0.2s;
+  color: var(--text);
+}
+
+
+.sidebar-nav label {
+  opacity: 0;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.sidebar-nav:hover label {
+  opacity: 1;
+}
+
+.sidebar-nav span {
+  font-size: 20px;
+  min-width: 30px;
+  text-align: center;
+}
+
+.sidebar-nav a:hover {
+  background: var(--subpanel);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 20px; 
 }
 
 .landing {
@@ -144,6 +247,7 @@ button:hover {
   margin: 0 0 12px;
   font-size: 1rem;
   letter-spacing: 0.02em;
+  text-align: center;
 }
 
 .subpanel {
@@ -494,14 +598,35 @@ button:hover {
 }
 
 .slideshow {
-  display: grid;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  justify-items: center;
+  overflow: hidden;
+  align-items: center;
+}
+
+.img-wrapper {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
 }
 
 .slideshow img {
-  width: 70%;
+  height: 80%;
   max-width: 900px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+#slideshow-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain; 
   border-radius: 10px;
   border: 1px solid var(--border);
 }
@@ -539,9 +664,11 @@ button:hover {
 }
 
 #notam-list {
-  max-height: 500px;
-  overflow-y: auto;
+flex-grow: 1; 
+  overflow-y: auto; 
   padding-right: 6px;
+  background: var(--subpanel); 
+  border-radius: 8px;
 }
 
 #notam-list::-webkit-scrollbar {
@@ -676,4 +803,12 @@ button:hover {
   margin: 0 5px;
   border-left: 1px solid var(--border);
   padding-left: 8px;
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24;
 }
