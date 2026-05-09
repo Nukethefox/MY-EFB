@@ -522,42 +522,6 @@ function setHtml(id, html) {
   node.innerHTML = html;
 }
 
-const AIRAC_BASE_DATE = new Date(Date.UTC(2023, 0, 26));
-const AIRAC_BASE_CYCLE = 2301;
-function getCurrentAIRAC() {
-  const now = new Date();
-
-  const daysDiff = Math.floor((now - AIRAC_BASE_DATE) / (1000 * 60 * 60 * 24));
-  const cyclesPassed = Math.floor(daysDiff / 28);
-
-  const baseYear = Math.floor(AIRAC_BASE_CYCLE / 100);
-  const baseCycle = AIRAC_BASE_CYCLE % 100;
-
-  let cycleNumber = baseCycle + cyclesPassed;
-  let year = baseYear;
-
-  while (cycleNumber > 13) {
-    cycleNumber -= 13;
-    year++;
-  }
-
-  return `${year}${String(cycleNumber).padStart(2, "0")}`;
-}
-
-function airacStatus(ofpAirac) {
-  const current = getCurrentAIRAC();
-
-  if (!ofpAirac || ofpAirac === "-") {
-    return `<span>-</span>`;
-  }
-
-  if (ofpAirac === current) {
-    return `<span class="airac-ok">${ofpAirac} (UP TO DATE!)</span>`;
-  }
-
-  return `<span class="airac-warn">${ofpAirac} (OUTDATED! CURRENT ${current})</span>`;
-}
-
 function flightTypeText(type) {
   const map = {
     s: "Scheduled",
@@ -575,7 +539,7 @@ function mainInfo(root) {
     { label: "ATC Callsign", value: textOf(root, "atc callsign") },
     { label: "OFP Date/Time", value: formatEpochUtc(textOf(root, "params time_generated")) },
     { label: "OFP Version", value: textOf(root, "general release") },
-    { label: "AIRAC", value: `${airacStatus(textOf(root, "params airac"))}`},
+    { label: "AIRAC", value: textOf(root, "params airac") },
     { label: "Flight Type", value: flightTypeText(textOf(root, "api_params flighttype")) }
   ]);
 
@@ -695,8 +659,8 @@ function loadsheet(root) {
 
   const fuelRows = [
     { item: "Taxi Out Fuel", kg: withUnit(textOf(root, "fuel taxi"), textOf(root, "params units")), time: formatDuration(textOf(root, "times taxi_out")), isBlock: false },
-    { item: "Trip/Enroute Fuel", kg: withUnit(textOf(root, "fuel enroute_burn"), textOf(root, "params units")), time: formatDuration(textOf(root, "times est_time_enroute")), isBlock: false },
-    { item: "Route Reserve/Contingency", kg: withUnit(textOf(root, "fuel contingency"), textOf(root, "params units")), time: formatDuration(textOf(root, "times contfuel_time")), isBlock: false },
+    { item: "Trip / Enroute Fuel", kg: withUnit(textOf(root, "fuel enroute_burn"), textOf(root, "params units")), time: formatDuration(textOf(root, "times est_time_enroute")), isBlock: false },
+    { item: "Route Reserve / Contingency", kg: withUnit(textOf(root, "fuel contingency"), textOf(root, "params units")), time: formatDuration(textOf(root, "times contfuel_time")), isBlock: false },
     { item: "Alternate Fuel", kg: withUnit(textOf(root, "fuel alternate_burn"), textOf(root, "params units")), time: formatDuration(textOf(root, "alternate ete")), isBlock: false },
     { item: "Final Reserve Fuel", kg: withUnit(textOf(root, "fuel reserve"), textOf(root, "params units")), time: formatDuration(textOf(root, "times reserve_time")), isBlock: false },
     { item: "ETOPS Fuel", kg: withUnit(textOf(root, "fuel etops"), textOf(root, "params units")), time: formatDuration(textOf(root, "times etopsfuel_time")), isBlock: false },
