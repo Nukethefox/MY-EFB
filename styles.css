@@ -221,9 +221,10 @@ button:hover {
 .dashboard-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+  margin-bottom: 5px;
 }
 
 .dashboard-header h1 {
@@ -281,14 +282,15 @@ button:hover {
 }
 
 .cols-4 {
-  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
 }
 
 .cols-2 {
-  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+
 .cols-1 {
-  grid-template-columns: repeat(1, minmax(180px, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .kv {
@@ -309,6 +311,9 @@ button:hover {
   font-size: 0.95rem;
   font-weight: 600;
   word-break: break-word;
+  overflow-wrap: anywhere;
+  display: block;
+  line-height: 1.2;
 }
 
 .main-info-layout {
@@ -594,6 +599,24 @@ button:hover {
   }
   .impacts-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 910px) {
+  .cols-4, .cols-2 {
+    grid-template-columns: 1fr;
+  }
+  
+  .fplan-airports {
+    grid-template-columns: 1fr;
+  }
+
+  .main-info-layout, .loadsheet-grid, .perf-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell {
+    padding: 16px 16px 16px 70px;
   }
 }
 
