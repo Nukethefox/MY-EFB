@@ -370,9 +370,9 @@ button:hover {
   position: absolute;
   left: 18px;
   right: 18px;
-  top: 81px;
+  top: 85px;
   height: 3px;
-  background: #314059;
+  background: skyblue;
 }
 
 .timeline-points {
@@ -389,8 +389,8 @@ button:hover {
 }
 
 .timeline-dot {
-  width: 12px;
-  height: 12px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
   background: var(--accent);
   margin: 0 auto;
