@@ -364,7 +364,7 @@ function landingPerformanceHtml(root) {
 <div class="airport-meta">DECISION HEIGHT: CHECK CHARTS</div>
 <div class="airport-meta">TRANS LEVEL: ${transitionLevel}</div>
 <br>
-<div class="airport-meta">Be Aware: the Transition Level given above is a generic value to be used offline. <br>If flying online, check ATIS.</div>
+<div class="airport-meta">Be Aware: the Transition Level given above is a calculated value to be used when ATC not Avail.</div>
 <hr class="section-separator">
 <p class="airport-meta">With the following data...</p>
 <div class="airport-meta">FLAPS: ${distanceNode.querySelector("flap_setting")?.textContent}</div>
@@ -535,8 +535,8 @@ function flightTypeText(type) {
 
 function mainInfo(root) {
   setRows("main-info-flight", [
-    { label: "Flight Number", value: `${textOf(root, "general icao_airline")}${textOf(root, "general flight_number")}` },
-    { label: "ATC Callsign", value: textOf(root, "atc callsign") },
+    { label: "Flight Number/Callsign", value: `${textOf(root, "general icao_airline")}${textOf(root, "general flight_number")}/${textOf(root, "atc callsign")}` },
+    { label: "Aircraft", value: textOf(root, "aircraft icao_code") },
     { label: "OFP Date/Time", value: formatEpochUtc(textOf(root, "params time_generated")) },
     { label: "OFP Version", value: textOf(root, "general release") },
     { label: "AIRAC", value: textOf(root, "params airac") },
@@ -553,8 +553,8 @@ setRows("main-info-airports", [
 
   setRows("main-info-ops", [
     { label: "Departure Date/Time", value: departureDateTime(root) },
-    { label: "Block Time", value: formatDuration(textOf(root, "times est_block")) },
     { label: "Block Fuel", value: withUnit(textOf(root, "fuel plan_ramp"), textOf(root, "params units")) },
+    { label: "ENR Block Time", value: formatDuration(textOf(root, "times est_block")) },
     { label: "Route Distance", value: withUnit(textOf(root, "general route_distance"), "NM") }
   ]);
 }
@@ -578,14 +578,14 @@ function fplan(root) {
   setHtml("fplan-airports", cards.join(""));
 
   setRows("fplan-grid", [
-    { label: "Route", value: `${textOf(root, "general route_ifps")}<br>ALTN: ${textOf(root, "alternate route_ifps")}`},
-    { label: "CRZ FL", value: `INITIAL FL${formatFL(textOf(root, "general initial_altitude"))}<br>STEPS: ${textOf(root, "general stepclimb_string")}` },
-    { label: "AVG WIND",value: `${formatWindWithUnit(textOf(root, "general avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "general avg_wind_spd"), "KT")}<br>AVG WIND COMP: ${formatWindWithUnit(textOf(root, "general avg_wind_comp"), "KT")}`},    
-    { label: "TROPO", value: `AVG: ${withUnit(textOf(root, "general avg_tropopause"), "FT")}<br>LOWEST: ${minTropoFromFixes(root)}` },
+    { label: "Route & CRZ FL", value: `${textOf(root, "origin icao_code")} ${textOf(root, "origin plan_rwy")} - ${textOf(root, "general route_ifps")} - ${textOf(root, "destination icao_code")} ${textOf(root, "destination plan_rwy")}<br>Initial: ${textOf(root, "general initial_altitude")} FT (Steps: ${textOf(root, "general stepclimb_string")})`},
+    { label: "ALTN Route & INFO", value: `${textOf(root, "alternate route_ifps")} - ${textOf(root, "alternate icao_code")} ${textOf(root, "alternate plan_rwy")}<br>${textOf(root, "alternate distance")} NM, ${textOf(root, "alternate cruise_altitude")} FT, ${formatDuration(textOf(root, "alternate ete"))}`},
+    { label: "AVG WIND",value: `ROUTE: ${formatWindWithUnit(textOf(root, "general avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "general avg_wind_spd"), "KT")} = COMP: ${formatWindWithUnit(textOf(root, "general avg_wind_comp"), "KT")}<br>ALTN: ${formatWindWithUnit(textOf(root, "alternate avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "alternate avg_wind_spd"), "KT")} = COMP: ${formatWindWithUnit(textOf(root, "alternate avg_wind_comp"), "KT")}`},    
+    { label: "TROPO", value: `AVG: ${withUnit(textOf(root, "general avg_tropopause"), "FT (ALTN: ")}${withUnit(textOf(root, "alternate avg_tropopause")," FT)")}<br>LOWEST: ${minTropoFromFixes(root)}` },
     { label: "HIGHEST MORA", value: maxMoraFromFixes(root) },
     { label: "AVG CRZ TEMP", value: cruiseAverageTemp(root) },
-    { label: "CI", value: textOf(root, "general costindex") },
-    { label: "Mach", value: textOf(root, "general cruise_mach") },
+    { label: "AVG ISA DEV", value: textOf(root, "general avg_temp_dev") },
+    { label: "CI", value: `${textOf(root, "general costindex")}` },
   ]);
 }
 
