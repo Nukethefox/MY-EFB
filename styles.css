@@ -14,11 +14,17 @@
 }
 
 @font-face {
-  font-family: 'B612cockpitFONT'; 
-  src: url('B612/B612-Regular.ttf') format('truetype'); 
+  font-family: 'B612cockpitFONT';
+  src: url('B612/B612-Regular.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
-  font-display: swap; 
+}
+
+@font-face {
+  font-family: 'B612cockpitFONT';
+  src: url('B612/B612-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
 }
 
 .airac-ok {
@@ -179,7 +185,7 @@ html {
   color: var(--muted);
 }
 
-input {
+input, select {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -188,6 +194,23 @@ input {
   font-size: 1rem;
   padding: 12px 14px;
   min-height: 46px;
+}
+
+#tod-target-fix {
+  border-color: rgba(88, 154, 255, 0.85);
+  background: linear-gradient(180deg, rgba(14, 21, 34, 0.96), rgba(11, 17, 30, 0.98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+#tod-target-fix:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(63, 125, 255, 0.18);
+}
+
+#tod-target-fix option {
+  background: var(--panel);
+  color: var(--text);
 }
 
 button {
@@ -784,7 +807,6 @@ flex-grow: 1;
   opacity: 0.8;
 }
 
-/* Calculators styling */
 .calc-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
