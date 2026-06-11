@@ -149,22 +149,22 @@ function runwayPerformanceHtml(rwy) {
 
 function airportCard(label, data, rwyPerf) {
   const metarBtn = (data.metar && data.metar !== "-") 
-    ? `<a href="https://metar-taf.com/metar/${data.icao}" target="_blank" class="notam-map-link" style="display:inline-block; margin-top:5px;"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">clear_day</span> DECODED METAR</a>` 
+    ? `<a href="https://metar-taf.com/metar/${data.icao}" target="_blank" class="notam-map-link" style="display:inline-block; margin-top:5px;"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">clear_day</span> DECODE METAR</a>` 
     : "";
     
   const tafBtn = (data.taf && data.taf !== "-") 
-    ? `<a href="https://metar-taf.com/taf/${data.icao}" target="_blank" class="notam-map-link" style="display:inline-block; margin-top:5px;"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">cloud</span> DECODED TAF</a>` 
+    ? `<a href="https://metar-taf.com/taf/${data.icao}" target="_blank" class="notam-map-link" style="display:inline-block; margin-top:5px;"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">cloud</span> DECODE TAF</a>` 
     : "";
 
   return `
     <article class="airport-card">
       <div class="airport-title">${label}</div>
       <div class="airport-main">${data.code}</div>
-      <div class="airport-rwy">RWY ${data.rwy}</div>
+      <div class="airport-rwy">PLANNED RWY: ${data.rwy}</div>
       <hr class="section-separator">
-      <div class="airport-meta">ELEV ${data.elevation} FT</div>
+      <div class="airport-meta">ELEV ${data.elevation} ft</div>
       <div class="airport-meta">
-        TRANS ALT ${formatAlt(data.transAlt)}<br>
+        TRANS ALT ${formatAlt(data.transAlt)} ft<br>
       </div>
       <hr class="section-separator">
       <div class="airport-meta">
@@ -364,7 +364,7 @@ function landingPerformanceHtml(root) {
 <div class="airport-meta">DECISION HEIGHT: CHECK CHARTS</div>
 <div class="airport-meta">TRANS LEVEL: ${transitionLevel}</div>
 <br>
-<div class="airport-meta">Be Aware: the Transition Level given above is a calculated value to be used when ATC not Avail.</div>
+<div class="airport-meta">Be Aware: the Transition Level given above is a calculated value to be used when ATC is not available.</div>
 <hr class="section-separator">
 <p class="airport-meta">With the following data...</p>
 <div class="airport-meta">FLAPS: ${distanceNode.querySelector("flap_setting")?.textContent}</div>
@@ -554,7 +554,7 @@ setRows("main-info-airports", [
   setRows("main-info-ops", [
     { label: "Departure Date/Time", value: departureDateTime(root) },
     { label: "Block Fuel", value: withUnit(textOf(root, "fuel plan_ramp"), textOf(root, "params units")) },
-    { label: "ENR Block Time", value: formatDuration(textOf(root, "times est_block")) },
+    { label: "Block Time", value: formatDuration(textOf(root, "times est_block")) },
     { label: "Route Distance", value: withUnit(textOf(root, "general route_distance"), "NM") }
   ]);
 }
@@ -578,15 +578,27 @@ function fplan(root) {
   setHtml("fplan-airports", cards.join(""));
 
   setRows("fplan-grid", [
-    { label: "Route & CRZ FL", value: `${textOf(root, "origin icao_code")} ${textOf(root, "origin plan_rwy")} - ${textOf(root, "general route_ifps")} - ${textOf(root, "destination icao_code")} ${textOf(root, "destination plan_rwy")}<br>Initial: ${textOf(root, "general initial_altitude")} FT (Steps: ${textOf(root, "general stepclimb_string")})`},
-    { label: "ALTN Route & INFO", value: `${textOf(root, "alternate route_ifps")} - ${textOf(root, "alternate icao_code")} ${textOf(root, "alternate plan_rwy")}<br>${textOf(root, "alternate distance")} NM, ${textOf(root, "alternate cruise_altitude")} FT, ${formatDuration(textOf(root, "alternate ete"))}`},
-    { label: "AVG WIND",value: `ROUTE: ${formatWindWithUnit(textOf(root, "general avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "general avg_wind_spd"), "KT")} = COMP: ${formatWindWithUnit(textOf(root, "general avg_wind_comp"), "KT")}<br>ALTN: ${formatWindWithUnit(textOf(root, "alternate avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "alternate avg_wind_spd"), "KT")} = COMP: ${formatWindWithUnit(textOf(root, "alternate avg_wind_comp"), "KT")}`},    
-    { label: "TROPO", value: `AVG: ${withUnit(textOf(root, "general avg_tropopause"), "FT (ALTN: ")}${withUnit(textOf(root, "alternate avg_tropopause")," FT)")}<br>LOWEST: ${minTropoFromFixes(root)}` },
+    { label: "Route", value: `<b>${textOf(root, "origin icao_code")}/${textOf(root, "origin plan_rwy")}</b> ${textOf(root, "general route_ifps")} <b>${textOf(root, "destination icao_code")}/${textOf(root, "destination plan_rwy")}</b>`},
+    { label: "CRZ FL", value: `Initial: ${textOf(root, "general initial_altitude")} FT (Steps: ${textOf(root, "general stepclimb_string")})`},
+    { label: "ALTN Route", value: `${textOf(root, "alternate route_ifps")} ${textOf(root, "alternate icao_code")}/${textOf(root, "alternate plan_rwy")}`},
+    { label: "ALTN INFO", value: `${textOf(root, "alternate distance")} NM, ${textOf(root, "alternate cruise_altitude")} FT, ${formatDuration(textOf(root, "alternate ete"))}`},
+    { label: "AVG WIND",value: `ROUTE: ${formatWindWithUnit(textOf(root, "general avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "general avg_wind_spd"), "KT")} = COMP: ${formatWindWithUnit(normalizePlusPrefix(textOf(root, "general avg_wind_comp")), "KT")}<br>ALTN: ${formatWindWithUnit(textOf(root, "alternate avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "alternate avg_wind_spd"), "KT")} = COMP: ${formatWindWithUnit(normalizePlusPrefix(textOf(root, "alternate avg_wind_comp")), "KT")}`},    
+    { label: "TROPO", value: `ENR AVG: ${withUnit(textOf(root, "general avg_tropopause"), "FT (ALTN AVG: ")}${withUnit(textOf(root, "alternate avg_tropopause")," FT)")}<br>ENR lowest: ${minTropoFromFixes(root)}` },
     { label: "HIGHEST MORA", value: maxMoraFromFixes(root) },
     { label: "AVG CRZ TEMP", value: cruiseAverageTemp(root) },
-    { label: "AVG ISA DEV", value: textOf(root, "general avg_temp_dev") },
+    { label: "AVG ISA DEV", value: normalizePlusPrefix(textOf(root, "general avg_temp_dev")) },
     { label: "CI", value: `${textOf(root, "general costindex")}` },
   ]);
+}
+
+function normalizePlusPrefix(raw) {
+  const v = String(raw || "").trim();
+  if (!v || v === "-") return v;
+  if (/^[+-]/.test(v)) return v;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return v;
+  if (n > 0) return `P${v}`;
+  return v;
 }
 
 function timeline(root) {
@@ -642,7 +654,7 @@ function loadsheet(root) {
     { label: "Cargo (baggage)", value: withUnit(textOf(root, "weights cargo"), textOf(root, "params units")) },
     { label: "Bag weight (as set on simbrief)", value: withUnit(textOf(root, "weights bag_weight"), textOf(root, "params units")) },
     { label: "Freight", value: withUnit(textOf(root, "weights freight_added"), textOf(root, "params units")) },
-    { label: "Total Payload", value: withUnit(textOf(root, "weights payload"), textOf(root, "params units")) }
+    { label: "Total Payload (excluding freight)", value: withUnit(textOf(root, "weights payload"), textOf(root, "params units")) }
   ]);
 
   const estZfw = numberOf(root, "weights est_zfw");
@@ -660,12 +672,13 @@ function loadsheet(root) {
   const fuelRows = [
     { item: "Taxi Out Fuel", kg: withUnit(textOf(root, "fuel taxi"), textOf(root, "params units")), time: formatDuration(textOf(root, "times taxi_out")), isBlock: false },
     { item: "Trip / Enroute Fuel", kg: withUnit(textOf(root, "fuel enroute_burn"), textOf(root, "params units")), time: formatDuration(textOf(root, "times est_time_enroute")), isBlock: false },
-    { item: "Route Reserve / Contingency", kg: withUnit(textOf(root, "fuel contingency"), textOf(root, "params units")), time: formatDuration(textOf(root, "times contfuel_time")), isBlock: false },
+    { item: `Route Reserve / Contingency (${safeText(textOf(root, 'general cont_rule'))})`, kg: withUnit(textOf(root, "fuel contingency"), textOf(root, "params units")), time: formatDuration(textOf(root, "times contfuel_time")), isBlock: false },
     { item: "Alternate Fuel", kg: withUnit(textOf(root, "fuel alternate_burn"), textOf(root, "params units")), time: formatDuration(textOf(root, "alternate ete")), isBlock: false },
     { item: "Final Reserve Fuel", kg: withUnit(textOf(root, "fuel reserve"), textOf(root, "params units")), time: formatDuration(textOf(root, "times reserve_time")), isBlock: false },
     { item: "ETOPS Fuel", kg: withUnit(textOf(root, "fuel etops"), textOf(root, "params units")), time: formatDuration(textOf(root, "times etopsfuel_time")), isBlock: false },
-    { item: "Extra Fuel", kg: withUnit(textOf(root, "fuel extra"), textOf(root, "params units")), time: formatDuration(textOf(root, "times extrafuel_time")), isBlock: false },
-    { item: "Block Fuel", kg: withUnit(textOf(root, "fuel plan_ramp"), textOf(root, "params units")), time: formatDuration(textOf(root, "times est_block")), isBlock: true },
+    { item: "Extra Fuel (WX, ATC...)", kg: withUnit(textOf(root, "fuel extra"), textOf(root, "params units")), time: formatDuration(textOf(root, "times extrafuel_time")), isBlock: false },
+    { item: "Planned TKOF", kg: withUnit(textOf(root, "fuel plan_takeoff"), textOf(root, "params units")), time: formatDuration(textOf(root, "times endurance")), isBlock: true },
+    { item: "BLOCK FUEL", kg: withUnit(textOf(root, "fuel plan_ramp"), textOf(root, "params units")), time: formatDuration("-"), isBlock: true },
     { item: "MAX FUEL CAP", kg: withUnit(textOf(root, "fuel max_tanks"), textOf(root, "params units")), time: formatDuration("-"), isBlock: true }
   ];
   const fuelTableBody = fuelRows.map((rowData) => `<tr class="${rowData.isBlock ? "fuel-row-block" : ""}"><td>${rowData.item}</td><td>${rowData.kg}</td><td>${rowData.time}</td></tr>`).join("");
@@ -677,6 +690,24 @@ function atcSection(root) {
   const atcActions = document.getElementById("atc-actions");
   if (!atcText) return;
   atcText.textContent = safeText(textOf(root, "atc flightplan_text"));
+  const filesDir = textOf(root, "files directory");
+  const pdfLink = textOf(root, "files pdf link");
+  const pdfContainerId = "atc-pdf-viewer";
+  let pdfContainer = document.getElementById(pdfContainerId);
+  if (!pdfContainer) {
+    pdfContainer = document.createElement('div');
+    pdfContainer.id = pdfContainerId;
+    pdfContainer.style.maxHeight = '350px';
+    pdfContainer.style.overflow = 'auto';
+    pdfContainer.style.marginTop = '10px';
+    atcText.insertAdjacentElement('afterend', pdfContainer);
+  }
+  if (filesDir && filesDir !== '-' && pdfLink && pdfLink !== '-') {
+    const full = filesDir.replace(/\/$/, '') + '/' + pdfLink.replace(/^\//, '');
+    pdfContainer.innerHTML = `<iframe src="${full}" style="width:100%; height:350px; border:0;" title="ATC Flightplan PDF"></iframe>`;
+  } else {
+    pdfContainer.innerHTML = '';
+  }
   if (atcActions) {
     const ivaoLink = textOf(root, "prefile ivao link");
     const vatsimLink = textOf(root, "prefile vatsim link");
@@ -984,7 +1015,7 @@ function linkifyCoordinates(text) {
     
     if (latH === 'S') lat *= -1;
     if (lonH === 'W') lon *= -1;
-    return `${match} <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" class="notam-map-link"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">moved_location</span> VIEW ON MAP</a>`;
+    return `${match} <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" class="notam-map-link"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">moved_location</span> View on Google Maps</a>`;
   });
 }
 
@@ -1221,6 +1252,11 @@ function renderDashboard() {
   timeline(xml);
   loadsheet(xml);
   atcSection(xml);
+  try {
+    integrateCalculators(xml);
+  } catch (e) {
+    console.debug('No calculators integration available:', e);
+  }
   cruiseWinds(xml);
   impacts(xml);
   images = getImageList(xml);
@@ -1242,3 +1278,363 @@ document.addEventListener("DOMContentLoaded", () => {
   bindDashboardReload();
   renderDashboard();
 });
+
+function integrateCalculators(xml) {
+  const fixes = [...xml.querySelectorAll('navlog > fix')];
+  const simbriefNav = [];
+  const simbriefFixes = [];
+  let cum = 0;
+  fixes.forEach(f => {
+    const ident = f.querySelector('ident')?.textContent?.trim();
+    const dist = parseFloat(f.querySelector('distance')?.textContent) || 0;
+    const timeTotal = textOf(f, 'time_total');
+    const fuelPlan = textOf(f, 'fuel_plan_onboard');
+    cum += dist;
+    if (ident) {
+      const upperIdent = ident.toUpperCase();
+      simbriefNav.push({ ident: upperIdent, cumDist: cum });
+      simbriefFixes.push({
+        ident: upperIdent,
+        time_total: timeTotal,
+        fuel_plan_onboard: fuelPlan
+      });
+    }
+  });
+  window.simbriefNavlogDistances = simbriefNav;
+  window.simbriefNavlogFixes = simbriefFixes;
+
+  const routeDistance = textOf(xml, 'general route_distance');
+  const avgWindCompRaw = textOf(xml, 'general avg_wind_comp');
+  const avgWindCompValue = parseAvgWindComponent(avgWindCompRaw);
+  const etpDistInput = document.getElementById('etp-dist');
+  const etpWindAInput = document.getElementById('etp-wind-a');
+  const etpWindBInput = document.getElementById('etp-wind-b');
+  if (etpDistInput && routeDistance !== '-') etpDistInput.value = routeDistance;
+  if (avgWindCompValue !== null) {
+    if (etpWindBInput) etpWindBInput.value = `${avgWindCompValue}`;
+    if (etpWindAInput) etpWindAInput.value = `${avgWindCompValue > 0 ? -avgWindCompValue : Math.abs(avgWindCompValue)}`;
+  }
+
+  if (typeof calculateTOD === 'function') {
+    document.querySelectorAll('#tod-current-alt, #tod-target-alt, #tod-current-spd, #tod-target-spd, #tod-hdg, #tod-wdir, #tod-wspd, #tod-target-fix').forEach(el => el.addEventListener('input', calculateTOD));
+  }
+  if (typeof calculateELW === 'function') {
+    document.querySelectorAll('#elw-gw, #elw-fob, #elw-dest-efob').forEach(el => el.addEventListener('input', calculateELW));
+  }
+  if (typeof calculateDescentPrediction === 'function') {
+    document.querySelectorAll('#pred-current-alt, #pred-vs, #pred-target-alt, #pred-gs, #pred-hdg, #pred-wdir, #pred-wspd').forEach(el => el.addEventListener('input', calculateDescentPrediction));
+  }
+  if (typeof calculateVsPrediction === 'function') {
+    document.querySelectorAll('#vs-target-alt, #vs-dist, #vs-current-alt, #vs-est-gs, #vs-hdg, #vs-wdir, #vs-wspd').forEach(el => el.addEventListener('input', calculateVsPrediction));
+  }
+  if (typeof calculateETP === 'function') {
+    document.querySelectorAll('#etp-dist, #etp-tas, #etp-wind-a, #etp-wind-b').forEach(el => el.addEventListener('input', calculateETP));
+  }
+  if (typeof calculateFuelFlow === 'function') {
+    document.querySelectorAll('#ff-fob, #ff-unit, #ff-rate, #ff-min').forEach(el => el.addEventListener('input', calculateFuelFlow));
+  }
+
+  const todSelect = document.getElementById('tod-target-fix');
+  const wpList = document.getElementById('wp-list');
+  const wpSearch = document.getElementById('wp-search');
+  if (todSelect) {
+    todSelect.innerHTML = '<option value="">-- Select Target Waypoint --</option>';
+    simbriefNav.forEach(f => {
+      if (f.ident !== 'TOD') {
+        const opt = document.createElement('option'); opt.value = f.ident; opt.textContent = f.ident; todSelect.appendChild(opt);
+      }
+    });
+  }
+  if (wpList) {
+    wpList.innerHTML = '';
+    simbriefNav.forEach(f => { const o = document.createElement('option'); o.value = f.ident; wpList.appendChild(o); });
+  }
+
+  const wpSearchInput = document.getElementById('wp-search');
+  if (wpSearchInput) {
+    wpSearchInput.addEventListener('input', updateWaypointInfo);
+  }
+
+  updateWaypointInfo();
+
+  try { if (typeof calculateTOD === 'function') calculateTOD(); } catch (e) {}
+  try { if (typeof calculateELW === 'function') calculateELW(); } catch (e) {}
+  try { if (typeof calculateDescentPrediction === 'function') calculateDescentPrediction(); } catch (e) {}
+  try { if (typeof calculateVsPrediction === 'function') calculateVsPrediction(); } catch (e) {}
+  try { if (typeof calculateFuelFlow === 'function') calculateFuelFlow(); } catch (e) {}
+  try { if (typeof calculateETP === 'function') calculateETP(); } catch (e) {}
+}
+
+
+function calculateWindComponent(hdg, wdir, wspd) {
+  if (isNaN(hdg) || isNaN(wdir) || isNaN(wspd)) return 0;
+  const angleRad = (wdir - hdg) * (Math.PI / 180);
+  return -wspd * Math.cos(angleRad);
+}
+
+function updateWindText(elementId, component) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  if (isNaN(component) || component === 0) {
+    el.textContent = "Wind component: 0 KT";
+    el.style.color = "var(--muted)";
+    return;
+  }
+  const absWind = Math.round(Math.abs(component));
+  if (component > 0) {
+    el.textContent = `Tailwind: ${absWind} KT`;
+    el.style.color = "var(--accent)";
+  } else {
+    el.textContent = `Headwind: ${absWind} KT`;
+    el.style.color = "var(--warn)";
+  }
+}
+
+function calculateTOD() {
+  const currentAlt = parseFloat(document.getElementById('tod-current-alt')?.value) || 0;
+  const targetAlt = parseFloat(document.getElementById('tod-target-alt')?.value) || 0;
+  const currentSpd = parseFloat(document.getElementById('tod-current-spd')?.value) || 0;
+  const targetSpd = parseFloat(document.getElementById('tod-target-spd')?.value) || 0;
+
+  const hdg = parseFloat(document.getElementById('tod-hdg')?.value);
+  const wdir = parseFloat(document.getElementById('tod-wdir')?.value);
+  const wspd = parseFloat(document.getElementById('tod-wspd')?.value);
+  const windComponent = calculateWindComponent(hdg, wdir, wspd);
+
+  updateWindText('tod-wind-text', windComponent);
+
+  let baseDistance = ((currentAlt - targetAlt) * 3) / 1000;
+  if (baseDistance < 0) baseDistance = 0;
+
+  let decelDistance = (currentSpd - targetSpd) / 10;
+  if (decelDistance < 0) decelDistance = 0;
+
+  let windDistance = windComponent / 10;
+
+  const totalDistance = baseDistance + decelDistance + windDistance;
+  const roundedTod = Math.max(0, Math.round(totalDistance));
+  const todResultEl = document.getElementById('tod-result');
+  if (todResultEl) todResultEl.textContent = roundedTod;
+
+  const selectedFix = document.getElementById('tod-target-fix')?.value;
+  const todGeoResult = document.getElementById('tod-geo-result');
+
+  if (selectedFix && Array.isArray(window.simbriefNavlogDistances) && window.simbriefNavlogDistances.length > 0 && roundedTod > 0) {
+    const targetIndex = window.simbriefNavlogDistances.findIndex(f => f.ident === selectedFix);
+    if (targetIndex !== -1) {
+      let accumulatedBack = 0;
+      let currentIdx = targetIndex;
+      let finalFixName = selectedFix;
+      let lastLegDistance = 0;
+
+      while (currentIdx >= 0) {
+        const currentFix = window.simbriefNavlogDistances[currentIdx];
+        const prevDist = currentIdx > 0 ? window.simbriefNavlogDistances[currentIdx - 1].cumDist : 0;
+        const legDistance = currentFix.cumDist - prevDist;
+
+        if (currentFix.ident === 'TOD') break;
+
+        accumulatedBack += legDistance;
+        lastLegDistance = legDistance;
+        finalFixName = currentFix.ident;
+        currentIdx--;
+      }
+
+      const remainingToTod = roundedTod - accumulatedBack;
+      const milesBefore = Math.max(0, remainingToTod + lastLegDistance).toFixed(1);
+      if (todGeoResult) todGeoResult.textContent = `Or ${milesBefore} NM before ${finalFixName}, target being ${targetAlt}ft at ${selectedFix}`;
+    } else {
+      if (todGeoResult) todGeoResult.textContent = "";
+    }
+  } else {
+    if (todGeoResult) todGeoResult.textContent = selectedFix ? " (Import SimBrief for geo-location)" : "";
+  }
+}
+
+function calculateELW() {
+  const gw = parseFloat(document.getElementById('elw-gw')?.value) || 0;
+  const fob = parseFloat(document.getElementById('elw-fob')?.value) || 0;
+  const destEfob = parseFloat(document.getElementById('elw-dest-efob')?.value) || 0;
+  const elwResultEl = document.getElementById('elw-result');
+  if (elwResultEl) elwResultEl.textContent = Math.round((gw - (fob - destEfob)) + 200);
+}
+
+function calculateDescentPrediction() {
+  const currentAlt = parseFloat(document.getElementById('pred-current-alt')?.value) || 0;
+  const targetAlt = parseFloat(document.getElementById('pred-target-alt')?.value) || 0;
+  const vs = parseFloat(document.getElementById('pred-vs')?.value) || 0;
+  const startGs = parseFloat(document.getElementById('pred-gs')?.value) || 0;
+
+  const hdg = parseFloat(document.getElementById('pred-hdg')?.value);
+  const wdir = parseFloat(document.getElementById('pred-wdir')?.value);
+  const wspd = parseFloat(document.getElementById('pred-wspd')?.value);
+  const windComponent = calculateWindComponent(hdg, wdir, wspd);
+
+  updateWindText('pred-wind-text', windComponent);
+
+  const altToDescend = currentAlt - targetAlt;
+  const predTimeResult = document.getElementById('pred-time-result');
+  const predDistResult = document.getElementById('pred-dist-result');
+
+  if (altToDescend <= 0 || vs <= 0) {
+    if (predTimeResult) predTimeResult.textContent = "00:00";
+    if (predDistResult) predDistResult.textContent = "0";
+    return;
+  }
+
+  const totalMinutes = altToDescend / vs;
+  const hrs = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+  const mins = String(Math.floor(totalMinutes % 60)).padStart(2, '0');
+  const secs = String(Math.round((totalMinutes % 1) * 60)).padStart(2, '0');
+  if (predTimeResult) predTimeResult.textContent = parseInt(hrs) > 0 ? `${hrs}:${mins}:${secs}` : `${mins}:${secs}`;
+
+  const altLossThousands = altToDescend / 1000;
+  const averageGsCorrection = (altLossThousands / 2) * 7;
+  const estimatedAvgGs = startGs - averageGsCorrection + windComponent;
+
+  const distance = (Math.max(100, estimatedAvgGs) * totalMinutes) / 60;
+  if (predDistResult) predDistResult.textContent = Math.round(distance);
+}
+
+function calculateVsPrediction() {
+  const currentAlt = parseFloat(document.getElementById('vs-current-alt')?.value) || 0;
+  const targetAlt = parseFloat(document.getElementById('vs-target-alt')?.value) || 0;
+  const dist = parseFloat(document.getElementById('vs-dist')?.value) || 0;
+  const rawGs = parseFloat(document.getElementById('vs-est-gs')?.value) || 0;
+
+  const hdg = parseFloat(document.getElementById('vs-hdg')?.value);
+  const wdir = parseFloat(document.getElementById('vs-wdir')?.value);
+  const wspd = parseFloat(document.getElementById('vs-wspd')?.value);
+  const windComponent = calculateWindComponent(hdg, wdir, wspd);
+
+  updateWindText('vs-wind-text', windComponent);
+
+  const effectiveGs = rawGs + windComponent;
+  const altToDescend = currentAlt - targetAlt;
+
+  const altLossThousands = altToDescend / 1000;
+  const averageGsCorrection = (altLossThousands / 2) * 7;
+  const estimatedAvgGs = effectiveGs - averageGsCorrection;
+
+  const vsRateResult = document.getElementById('vs-rate-result');
+  if (altToDescend <= 0 || dist <= 0 || estimatedAvgGs <= 0) {
+    if (vsRateResult) vsRateResult.textContent = "0";
+    return;
+  }
+
+  const timeToTargetMinutes = (dist / estimatedAvgGs) * 60;
+  const requiredVs = altToDescend / timeToTargetMinutes;
+  if (vsRateResult) vsRateResult.textContent = Math.round(requiredVs);
+}
+
+function calculateETP() {
+  const d = parseFloat(document.getElementById('etp-dist')?.value) || 0;
+  const tas = parseFloat(document.getElementById('etp-tas')?.value) || 440;
+  const f = parseFloat(document.getElementById('etp-wind-a')?.value) || 0;
+  const h = parseFloat(document.getElementById('etp-wind-b')?.value) || 0;
+
+  const gsReturn = tas + f;
+  const gsContinue = tas + h;
+
+  const etpResultEl = document.getElementById('etp-result');
+  const etpGeoResultEl = document.getElementById('etp-geo-result');
+
+  if (d <= 0 || gsReturn <= 0 || gsContinue <= 0) {
+    if (etpResultEl) etpResultEl.textContent = "0";
+    if (etpGeoResultEl) etpGeoResultEl.textContent = "";
+    return;
+  }
+
+  const distanceFromA = (d * gsReturn) / (gsContinue + gsReturn);
+  const roundedEtp = Math.round(distanceFromA);
+  if (etpResultEl) etpResultEl.textContent = roundedEtp;
+
+  if (Array.isArray(window.simbriefNavlogDistances) && window.simbriefNavlogDistances.length > 0) {
+    const targetFix = window.simbriefNavlogDistances.find(fix => fix.cumDist >= roundedEtp);
+    if (targetFix) {
+      const milesBefore = (targetFix.cumDist - distanceFromA).toFixed(1);
+      if (etpGeoResultEl) etpGeoResultEl.textContent = `or ${milesBefore} NM before ${targetFix.ident}`;
+    } else {
+      if (etpGeoResultEl) etpGeoResultEl.textContent = "or past last route waypoint";
+    }
+  } else {
+    if (etpGeoResultEl) etpGeoResultEl.textContent = " (Write SimBrief username to get a waypoint estimation)";
+  }
+}
+
+function calculateFuelFlow() {
+  const fob = parseFloat(document.getElementById('ff-fob')?.value) || 0;
+  const rate = parseFloat(document.getElementById('ff-rate')?.value) || 0;
+  const min = parseFloat(document.getElementById('ff-min')?.value) || 0;
+  const unit = document.getElementById('ff-unit')?.value || 'KG/MIN';
+
+  let fuelUsedPerMinute = 0;
+
+  if (unit === 'KG/MIN' || unit === 'LBS/MIN') {
+    fuelUsedPerMinute = rate;
+  } else if (unit === 'KG/HR' || unit === 'LBS/HR') {
+    fuelUsedPerMinute = rate / 60;
+  }
+
+  const fuelUsed = fuelUsedPerMinute * min;
+  const fuelRemaining = fob - fuelUsed;
+
+  const massUnit = unit.split('/')[0];
+
+  const ffUsedResult = document.getElementById('ff-used-result');
+  const ffRemResult = document.getElementById('ff-rem-result');
+  const ffResUnit = document.getElementById('ff-res-unit');
+
+  if (ffUsedResult) ffUsedResult.textContent = Math.round(fuelUsed);
+  if (ffRemResult) ffRemResult.textContent = Math.round(fuelRemaining);
+  if (ffResUnit) ffResUnit.textContent = massUnit;
+}
+
+function parseAvgWindComponent(raw) {
+  const value = String(raw || '').trim();
+  if (!value || value === '-') return null;
+  const normalized = value.replace(/^P/i, '');
+  const signed = /^[+-]/.test(normalized) ? normalized : `+${normalized}`;
+  const numeric = Number(signed);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function updateWaypointInfo() {
+  const searchInput = document.getElementById('wp-search');
+  const wpResults = document.getElementById('wp-results');
+  const wpTime = document.getElementById('wp-time');
+  const wpFuel = document.getElementById('wp-fuel');
+  if (!searchInput || !wpResults || !wpTime || !wpFuel) return;
+
+  const searchValue = String(searchInput.value || '').trim().toUpperCase();
+  if (!searchValue) {
+    wpResults.style.display = 'none';
+    wpTime.textContent = '00:00';
+    wpFuel.textContent = '0';
+    return;
+  }
+
+  const fix = (window.simbriefNavlogFixes || []).find((item) => item.ident === searchValue);
+  if (!fix) {
+    wpResults.style.display = 'none';
+    wpTime.textContent = '00:00';
+    wpFuel.textContent = '0';
+    return;
+  }
+
+  wpTime.textContent = formatDuration(fix.time_total);
+  wpFuel.textContent = fix.fuel_plan_onboard || '0';
+  wpResults.style.display = 'block';
+}
+
+document.getElementById('legs-chain')?.addEventListener('input', () => {
+  const el = document.getElementById('legs-chain');
+  const legsResult = document.getElementById('legs-result');
+  const value = (el?.value || '').replace(/[^0-9.+-]/g, '');
+  if (!value) { if (legsResult) legsResult.textContent = '0'; return; }
+  try {
+    const sum = value.split('+').map(num => parseFloat(num) || 0).reduce((acc, curr) => acc + curr, 0);
+    if (legsResult) legsResult.textContent = Number(sum.toFixed(2));
+  } catch (e) { if (legsResult) legsResult.textContent = '0'; }
+});
+
