@@ -1,16 +1,18 @@
 const themeToggleBtn = document.getElementById('theme-toggle');
-const themeIcon = themeToggleBtn.querySelector('span');
+if (themeToggleBtn) {
+  const themeIcon = themeToggleBtn.querySelector('span');
 
-themeToggleBtn.addEventListener('click', () => {
-  const currentTheme = document.documentElement.getAttribute('data-theme');
-  if (currentTheme === 'light') {
-    document.documentElement.removeAttribute('data-theme');
-    themeIcon.textContent = 'light_mode';
-  } else {
-    document.documentElement.setAttribute('data-theme', 'light');
-    themeIcon.textContent = 'dark_mode';
-  }
-});
+  themeToggleBtn.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    if (currentTheme === 'light') {
+      document.documentElement.removeAttribute('data-theme');
+      themeIcon.textContent = 'light_mode';
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      themeIcon.textContent = 'dark_mode';
+    }
+  });
+}
 
 const SIMBRIEF_XML_URL = "https://www.simbrief.com/api/xml.fetcher.php?username=";
 
