@@ -13,7 +13,7 @@
 <body class="app-shell">
 
 <nav class="sidebar-nav">
-    <a href="#section-main"><span class="material-symbols-outlined">dashboard</span><label>Main Info</label></a>
+    <a href="#section-main"><span class="material-symbols-outlined">info</span><label>Main Info</label></a>
     <a href="#section-fplan"><span class="material-symbols-outlined">flight_takeoff</span><label>Flight Plan</label></a>
     <a href="#section-winds"><span class="material-symbols-outlined">directions</span><label>Waypoints</label></a>
     <a href="#section-loadsheet"><span class="material-symbols-outlined">balance</span><label>Loadsheet</label></a>
@@ -22,37 +22,37 @@
     <a href="#section-impacts"><span class="material-symbols-outlined">bar_chart</span><label>Impacts</label></a>
     <a href="#section-atc"><span class="material-symbols-outlined">cell_tower</span><label>ATC F-PLAN, OFP</label></a>
     <a href="#section-images"><span class="material-symbols-outlined">map</span><label>WX Charts</label></a>
-    <a href="#section-map"><span class="material-symbols-outlined">explore</span><label>Map</label></a>
+    <a href="#section-map"><span class="material-symbols-outlined">globe</span><label>Map</label></a>
     <a href="#section-notams"><span class="material-symbols-outlined">warning</span><label>NOTAMs</label></a>
+    <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">
+      <span class="material-symbols-outlined">light_mode</span>
+      <label>Theme</label>
+    </button>
   </nav>
 
   <main class="dashboard">
     <header class="dashboard-header">
       <h1>Operational Flight Plan Dashboard</h1>
-      <p style="font-size: 0.8rem; opacity: 0.7; margin-top: -10px; margin-bottom: 10px;">Only for simulation. Not an official SimBrief product. <br>Created by <a href="https://github.com/Nukethefox" target="_blank" style="color: skyblue;">Andreu Busom</a>. Read about privacy <a href="privacy.html" target="_blank" style="color: skyblue;">here</a>.</p>
+      <p style="font-size: 14px; color: var(--muted); margin-top: -10px; margin-bottom: 10px;">Only for simulation. Not an official SimBrief product. <br>Created by <a href="https://github.com/Nukethefox" target="_blank" style="color: var(--muted);">Andreu Busom</a>. Read about privacy <a href="privacy.html" target="_blank" style="color: var(--muted);">here</a>.</p>
       <button id="refresh-data-btn" type="button">Reload from SimBrief</button>
     </header>
     <br>
 
     <section id="section-main" class="panel full-screen">
-      <h2>Main Info</h2>
+      <h2>FLIGHT INFO</h2>
       <div class="main-info-layout">
         <article class="subpanel">
-          <h3>Flight:</h3>
           <div class="grid cols-2" id="main-info-flight"></div>
         </article>
         <article class="subpanel">
-          <h3>Airports:</h3>
           <div class="grid cols-2" id="main-info-airports"></div>
         </article>
         <article class="subpanel">
-          <h3>Total fuel, time and distance:</h3>
           <div class="grid cols-2" id="main-info-ops"></div>
         </article>
       </div>
       <br>
       <br>
-      <h2>Timestamps Breakdown</h2>
       <div class="timeline-line" id="timeline-line"></div>
     </section>
 
@@ -93,8 +93,8 @@
     </section>
 
     <section id="section-perf" class="panel full-screen">
-      <h2>Initial Performance Predictions</h2>
-      <p>NOTE: The following calculations are based on <b><u>Init Loadsheet & Generic A/C Config</u></b>. Please reffer to your sim/addon Perf Calculator for more precise values.</p>
+      <h2>Initial Performance Prediction</h2>
+      <p>The following calculations are based on <b><u>initial Loadsheet and Standard aircraft configuration</u></b>. The inputs cannot be modified here, to do so, please use the <a href="https://dispatch.simbrief.com/tools" target="_blank">SimBrief calculator</a>.<br>Please use the Performance Calculator on your sim/addon for more precise values.</p>
       <div class="perf-grid">
         <article class="subpanel">
           <h3>Takeoff</h3>
@@ -110,8 +110,39 @@
     <section id="section-calcs" class="panel full-screen">
       <h2>In-Flight Calculators</h2>
       <div class="calc-grid">
+
         <div class="calc-panel">
-          <h3 class="calc-title">Top of Descent (TOD)</h3>
+          <h3 class="calc-title">Waypoints info from OFP</h3>
+          <div class="grid-inputs calc-grid-inputs">
+            <div class="input-group" style="grid-column: span 2;"><label for="wp-search">Select or Type Waypoint</label><input type="text" id="wp-search" list="wp-list" placeholder="e.g. TEBLA"></div>
+            <datalist id="wp-list"></datalist>
+          </div>
+          <div id="wp-results" class="wp-results" style="display: none;">
+            <div class="result-box">Planned Elapsed Time: <span class="result-value" id="wp-time">00:00</span></div>
+            <div class="result-box" style="border-left-color: var(--alert);">Planned Remaining Fuel: <span class="result-value" id="wp-fuel">0</span></div>
+          </div>
+        </div>
+        <div class="calc-panel">
+          <h3 class="calc-title">Flight Plan Legs Sum</h3>
+          <div class="grid-inputs calc-grid-inputs">
+            <div class="input-group" style="grid-column: span 2;"><label>Legs Chain (e.g. 27.1+32+6.4)</label><input type="text" id="legs-chain" placeholder="Enter legs separated by +"></div>
+          </div>
+          <div class="result-box">Total: <span class="result-value" id="legs-result">0</span> NM</div>
+        </div>
+        <div class="calc-panel">
+          <h3 class="calc-title">ETP: Equal Time Point</h3>
+          <div class="calc-note">Distance and wind components are specified on SimBrief OFP</div>
+          <div class="grid-inputs calc-grid-inputs">
+            <div class="input-group"><label>Total Dist from DEPT to ARR (NM)</label><input type="number" id="etp-dist" value="400"></div>
+            <div class="input-group"><label>TAS (KT)</label><input type="number" id="etp-tas" value="440"></div>
+            <div class="input-group"><label>Wind component to DEPT (+/- KT)</label><input type="number" id="etp-wind-a" placeholder="Tail+ / Head-"></div>
+            <div class="input-group"><label>Wind component to ARR (+/- KT)</label><input type="number" id="etp-wind-b" placeholder="Tail+ / Head-"></div>
+          </div>
+          <div class="result-box">ETP from Departure airport: <span class="result-value" id="etp-result">0</span> NM (<span class="result-value" id="etp-time-result">00:00</span>)<div id="etp-geo-result" class="result-note"></div></div>
+        </div>
+
+        <div class="calc-panel">
+          <h3 class="calc-title">TOD: Top of Descent</h3>
           <div class="grid-inputs calc-grid-inputs">
             <div class="input-group"><label>Current Altitude (FT)</label><input type="number" id="tod-current-alt" value="35000"></div>
             <div class="input-group"><label>Target Altitude (FT)</label><input type="number" id="tod-target-alt" value="5000"></div>
@@ -124,43 +155,9 @@
           </div>
           <div class="result-box">Start descending at <span class="result-value" id="tod-result">0</span> NM from target waypoint<div id="tod-geo-result" class="result-note"></div><div id="tod-wind-text" class="result-note">Wind component: 0 KT</div></div>
         </div>
-
+        
         <div class="calc-panel">
-          <h3 class="calc-title">Landing Weight Prediction</h3>
-          <div class="grid-inputs calc-grid-inputs">
-            <div class="input-group"><label>Gross Weight (KG)</label><input type="number" id="elw-gw" value="64000"></div>
-            <div class="input-group"><label>FOB (KG)</label><input type="number" id="elw-fob" value="6000"></div>
-            <div class="input-group"><label>DEST EFOB (KG)</label><input type="number" id="elw-dest-efob" value="2200"></div>
-          </div>
-          <div class="result-box">Predicted Landing Weight: <span class="result-value" id="elw-result">0</span> KG</div>
-        </div>
-
-        <div class="calc-panel">
-          <h3 class="calc-title">Flight Plan Legs Sum</h3>
-          <div class="grid-inputs calc-grid-inputs">
-            <div class="input-group" style="grid-column: span 2;"><label>Legs Chain (e.g. 27.1+32+6.4)</label><input type="text" id="legs-chain" placeholder="Enter legs separated by +"></div>
-          </div>
-          <div class="result-box">Total: <span class="result-value" id="legs-result">0</span> NM</div>
-        </div>
-        <div class="calc-panel">
-          <h3 class="calc-title">Time & Distance Prediction during descend</h3>
-          <div class="grid-inputs calc-grid-inputs">
-            <div class="input-group"><label>Current Altitude (FT)</label><input type="number" id="pred-current-alt" value="25000"></div>
-            <div class="input-group"><label>Current V/S (FT/MIN)</label><input type="number" id="pred-vs" value="1400"></div>
-            <div class="input-group"><label>Target Altitude (FT)</label><input type="number" id="pred-target-alt" value="10000"></div>
-          </div>
-          <div class="result-box">Time: <span class="result-value" id="pred-time-result">00:00</span> minutes</div>
-          <div class="grid-inputs calc-grid-inputs" style="margin-top: 10px;">
-            <div class="input-group"><label>Initial Ground Speed (KT)</label><input type="number" id="pred-gs" value="320"></div>
-            <div class="input-group"><label>Aircraft Heading (°)</label><input type="number" id="pred-hdg" placeholder="e.g. 090"></div>
-            <div class="input-group"><label>Wind FROM º</label><input type="number" id="pred-wdir" placeholder="e.g. 120"></div>
-            <div class="input-group"><label>Wind KT</label><input type="number" id="pred-wspd" placeholder="e.g. 25"></div>
-          </div>
-          <div class="result-box" style="border-left-color: var(--alert);">Distance flown: <span class="result-value" id="pred-dist-result" style="color: var(--alert);">0</span> NM</div>
-        </div>
-
-        <div class="calc-panel">
-          <h3 class="calc-title">Required V/S Rate</h3>
+          <h3 class="calc-title">Required Sink Rate</h3>
           <div class="grid-inputs calc-grid-inputs">
             <div class="input-group"><label>Current Altitude (FT)</label><input type="number" id="vs-current-alt" value="25000"></div>
             <div class="input-group"><label>Target Altitude (FT)</label><input type="number" id="vs-target-alt" value="17000"></div>
@@ -170,9 +167,36 @@
             <div class="input-group"><label>Wind FROM º</label><input type="number" id="vs-wdir" placeholder="e.g. 120"></div>
             <div class="input-group"><label>Wind KT</label><input type="number" id="vs-wspd" placeholder="e.g. 25"></div>
           </div>
-          <div class="result-box">Required V/S: <span class="result-value" id="vs-rate-result">0</span> FT/MIN</div>
+          <div class="result-box">
+            <div>Required V/S: <span class="result-value" id="vs-rate-result">0</span> FT/MIN</div>
+            <div style="margin-top: 5px; font-size: 0.9em;">Estimated Avg GS: <span id="vs-avg-gs-result">0</span> KT <br> Final GS: <span id="vs-final-gs-result">0</span> KT <br> Resulting glideslope: <span id="vs-angle-result">0</span>°
+            </div>
+          </div>
         </div>
-
+        <div class="calc-panel">
+          <h3 class="calc-title">Flown Time & Distance during clb/des</h3>
+          <div class="grid-inputs calc-grid-inputs">
+            <div class="input-group"><label>Current Altitude (FT)</label><input type="number" id="pred-current-alt" value="25000"></div>
+            <div class="input-group"><label>Current V/S (FT/MIN)</label><input type="number" id="pred-vs" value="1400"></div>
+            <div class="input-group"><label>Target Altitude (FT)</label><input type="number" id="pred-target-alt" value="10000"></div>
+          </div>
+          <div class="result-box">
+            <div>Time: <span class="result-value" id="pred-time-result">00:00</span> minutes</div>
+            <div style="margin-top: 5px; font-size: 0.9em;">Glideslope / Path Angle: <span id="pred-angle-result">0</span>°
+            </div>
+          </div>
+          <div class="grid-inputs calc-grid-inputs" style="margin-top: 10px;">
+            <div class="input-group"><label>Initial Ground Speed (KT)</label><input type="number" id="pred-gs" value="320"></div>
+            <div class="input-group"><label>Aircraft Heading (°)</label><input type="number" id="pred-hdg" placeholder="e.g. 090"></div>
+            <div class="input-group"><label>Wind FROM º</label><input type="number" id="pred-wdir" placeholder="e.g. 120"></div>
+            <div class="input-group"><label>Wind KT</label><input type="number" id="pred-wspd" placeholder="e.g. 25"></div>
+          </div>
+          <div class="result-box" style="border-left-color: var(--alert);">
+            <div>Distance flown: <span class="result-value" id="pred-dist-result" style="color: var(--alert);">0</span> NM</div>
+            <div style="margin-top: 5px; font-size: 0.9em;">Estimated Avg GS: <span id="pred-avg-gs-result">0</span> KT <br> Final GS: <span id="pred-final-gs-result">0</span> KT
+            </div>
+          </div>
+        </div>
         <div class="calc-panel">
           <h3 class="calc-title">Fuel Burn Prediction</h3>
           <div class="grid-inputs calc-grid-inputs">
@@ -183,29 +207,14 @@
           </div>
           <div class="result-box">Used: <span class="result-value" id="ff-used-result">0</span> | Remaining: <span class="result-value" id="ff-rem-result">0</span> <span id="ff-res-unit" class="result-note">KG</span></div>
         </div>
-
         <div class="calc-panel">
-          <h3 class="calc-title">Equitime Point (ETP)</h3>
-          <div class="calc-note">Distance and wind components are specified on SimBrief OFP</div>
+          <h3 class="calc-title">Landing Weight Prediction</h3>
           <div class="grid-inputs calc-grid-inputs">
-            <div class="input-group"><label>Total Dist from DEPT to ARR (NM)</label><input type="number" id="etp-dist" value="400"></div>
-            <div class="input-group"><label>TAS (KT)</label><input type="number" id="etp-tas" value="440"></div>
-            <div class="input-group"><label>Wind component to DEPT (+/- KT)</label><input type="number" id="etp-wind-a" placeholder="Tail+ / Head-"></div>
-            <div class="input-group"><label>Wind component to ARR (+/- KT)</label><input type="number" id="etp-wind-b" placeholder="Tail+ / Head-"></div>
+            <div class="input-group"><label>Gross Weight (KG)</label><input type="number" id="elw-gw" value="64000"></div>
+            <div class="input-group"><label>FOB (KG)</label><input type="number" id="elw-fob" value="6000"></div>
+            <div class="input-group"><label>DEST EFOB (KG)</label><input type="number" id="elw-dest-efob" value="2200"></div>
           </div>
-          <div class="result-box">ETP from Departure airport: <span class="result-value" id="etp-result">0</span> NM<div id="etp-geo-result" class="result-note"></div></div>
-        </div>
-
-        <div class="calc-panel">
-          <h3 class="calc-title">Waypoints info from OFP</h3>
-          <div class="grid-inputs calc-grid-inputs">
-            <div class="input-group" style="grid-column: span 2;"><label for="wp-search">Select or Type Waypoint</label><input type="text" id="wp-search" list="wp-list" placeholder="e.g. TEBLA"></div>
-            <datalist id="wp-list"></datalist>
-          </div>
-          <div id="wp-results" class="wp-results" style="display: none;">
-            <div class="result-box">Planned Elapsed Time: <span class="result-value" id="wp-time">00:00</span></div>
-            <div class="result-box" style="border-left-color: var(--alert);">Planned Remaining Fuel: <span class="result-value" id="wp-fuel">0</span></div>
-          </div>
+          <div class="result-box">Predicted Landing Weight: <span class="result-value" id="elw-result">0</span> KG</div>
         </div>
       </div>
     </section>
@@ -238,6 +247,15 @@
 
     <section id="section-map" class="panel full-screen">
       <h2>Route & NOTAMs map</h2>
+      <div class="radar-controls">
+        <label><input type="checkbox" id="radar-toggle">View rain radar</label>
+        <div id="radar-panel" style="display: none; align-items: center; gap: 8px;">
+          <button type="button" id="radar-prev-btn">◀◀</button>
+          <button type="button" id="radar-play-btn">▶</button>
+          <button type="button" id="radar-next-btn">▶▶</button>
+          <span id="radar-timestamp">--:--</span>
+        </div>
+      </div>
       <div id="map" style="height: 500px; flex-grow: 1; border-radius: 8px; border: 1px solid var(--border);"></div>
     </section>
 
@@ -254,7 +272,7 @@
 </select>
 
 <select id="notam-time">
-<option value="active">Active (Flight Window)</option>
+<option value="active">Active</option>
 <option value="future">Future</option>
 <option value="all">All</option>
 </select>
