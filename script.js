@@ -1,4 +1,38 @@
+const themeToggleBtn = document.getElementById('theme-toggle');
+const themeIcon = themeToggleBtn.querySelector('span');
+
+themeToggleBtn.addEventListener('click', () => {
+  const currentTheme = document.documentElement.getAttribute('data-theme');
+  if (currentTheme === 'light') {
+    document.documentElement.removeAttribute('data-theme');
+    themeIcon.textContent = 'light_mode';
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    themeIcon.textContent = 'dark_mode';
+  }
+});
+
 const SIMBRIEF_XML_URL = "https://www.simbrief.com/api/xml.fetcher.php?username=";
+
+document.querySelectorAll(".calc-panel > .calc-title").forEach((title) => {
+  title.setAttribute("role", "button");
+  title.setAttribute("tabindex", "0");
+  title.setAttribute("aria-expanded", "false");
+
+  const toggleCalculator = () => {
+    const panel = title.parentElement;
+    const isOpen = panel.classList.toggle("is-open");
+    title.setAttribute("aria-expanded", String(isOpen));
+  };
+
+  title.addEventListener("click", toggleCalculator);
+  title.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggleCalculator();
+    }
+  });
+});
 
 function textOf(root, selector) {
   const node = root.querySelector(selector);
@@ -149,11 +183,11 @@ function runwayPerformanceHtml(rwy) {
 
 function airportCard(label, data, rwyPerf) {
   const metarBtn = (data.metar && data.metar !== "-") 
-    ? `<a href="https://metar-taf.com/metar/${data.icao}" target="_blank" class="notam-map-link" style="display:inline-block; margin-top:5px;"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">clear_day</span> DECODE METAR</a>` 
+    ? `<a href="https://metar-taf.com/metar/${data.icao}" target="_blank" class="notam-map-link" style="display:inline-block; margin-top:5px;"><span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">clear_day</span> DECODE METAR</a>` 
     : "";
     
   const tafBtn = (data.taf && data.taf !== "-") 
-    ? `<a href="https://metar-taf.com/taf/${data.icao}" target="_blank" class="notam-map-link" style="display:inline-block; margin-top:5px;"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">cloud</span> DECODE TAF</a>` 
+    ? `<a href="https://metar-taf.com/taf/${data.icao}" target="_blank" class="notam-map-link" style="display:inline-block; margin-top:5px;"><span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">cloud</span> DECODE TAF</a>` 
     : "";
 
   return `
@@ -289,41 +323,33 @@ function takeoffPerformanceHtml(root) {
   const antiIce = rwy.querySelector("anti_ice_setting")?.textContent || "";
 
   const bleedAntiIce = `${bleed} / ${antiIce}`;
+  const aircraftName = `${textOf(root, "aircraft icao_code")} ${textOf(root, "aircraft engines")}`;
+  const weightVal = formatWeight(root, cond.querySelector("planned_weight")?.textContent);
+  const metarVal = textOf(root, "origin metar");
 
   return `
-<div class="airport-meta">RUNWAY: ${rwy.querySelector("identifier")?.textContent}</div>
-<div class="airport-meta">HEADWIND: ${rwy.querySelector("headwind_component")?.textContent} kts</div>
-<div class="airport-meta">CROSSWIND: ${rwy.querySelector("crosswind_component")?.textContent} kts</div>
-<div class="airport-meta">SURFACE: ${cond.querySelector("surface_condition")?.textContent}</div>
-<div class="airport-meta">TEMP: ${cond.querySelector("temperature")?.textContent} °C</div>
-<div class="airport-meta">QNH: ${altimeterToHpa(cond.querySelector("altimeter")?.textContent)}</div>
-
-<hr class="section-separator">
-
-<div class="airport-meta">FLAPS: ${rwy.querySelector("flap_setting")?.textContent}</div>
-<div class="airport-meta">BLEED: ${bleed}</div>
-<div class="airport-meta">ANTI ICE: ${antiIce}</div>
-
-<div class="airport-meta">THRUST: ${rwy.querySelector("thrust_setting")?.textContent}</div>
-<div class="airport-meta">FLEX: ${rwy.querySelector("flex_temperature")?.textContent} °C</div>
-
-<div class="airport-meta">V1: ${rwy.querySelector("speeds_v1")?.textContent} kts</div>
-<div class="airport-meta">VR: ${rwy.querySelector("speeds_vr")?.textContent} kts</div>
-<div class="airport-meta">V2: ${rwy.querySelector("speeds_v2")?.textContent} kts</div>
-
-<div class="airport-meta">${rwy.querySelector("speeds_other_id")?.textContent}: ${rwy.querySelector("speeds_other")?.textContent} kts</div>
-<br>
-<div class="airport-meta">THR REDUCTION/ENG OUT ACC: ${thrustReduction} ft</div>
-<div class="airport-meta">ACCELERATION (NADP1): ${acceleration} ft</div>
-<div class="airport-meta">ACCELERATION (NADP2): ${acceleration2} ft</div>
-
-
-<hr class="section-separator">
-<div class="airport-meta">TORA: ${rwy.querySelector("length_tora")?.textContent}</div>
-<div class="airport-meta">ASDA: ${rwy.querySelector("length_asda")?.textContent}</div>
-<div class="airport-meta">DECISION DISTANCE: ${rwy.querySelector("distance_decide")?.textContent} m</div>
-<div class="airport-meta">STOP DISTANCE: ${rwy.querySelector("distance_reject")?.textContent} m</div>
-<div class="airport-meta">STOP MARGIN: ${rwy.querySelector("distance_margin")?.textContent} m</div>
+  <div class="airport-meta"><b>INPUTS (RUNWAY)</b></div>
+  <div class="airport-meta">RUNWAY: ${rwy.querySelector("identifier")?.textContent} / TORA: ${rwy.querySelector("length_tora")?.textContent} m / ASDA: ${rwy.querySelector("length_asda")?.textContent} m / Gradient: ${rwy.querySelector("gradient")?.textContent}%</div>
+  <div class="airport-meta">METAR: ${metarVal}</div>
+  <br>
+  <div class="airport-meta">HEADWIND: ${rwy.querySelector("headwind_component")?.textContent} kts / CROSSWIND: ${rwy.querySelector("crosswind_component")?.textContent} kts / SURFACE: ${cond.querySelector("surface_condition")?.textContent}</div>
+  <div class="airport-meta">TEMP: ${cond.querySelector("temperature")?.textContent} °C / QNH: ${altimeterToHpa(cond.querySelector("altimeter")?.textContent)} </div>
+  <hr class="section-separator">
+  <div class="airport-meta"><b>INPUTS (AIRCRAFT)</b></div>
+  <div class="airport-meta">Aircraft: ${aircraftName} / Weight: ${weightVal}</div>
+  <div class="airport-meta"><b>Standard Aircraft Config:</b></div>
+  <div class="airport-meta">FLAPS: ${rwy.querySelector("flap_setting")?.textContent} / BLEED: ${bleed} / ANTI ICE: ${antiIce}</div>
+  <hr class="section-separator">
+  <div class="airport-meta"><b>OUTPUT</b></div>
+  <div class="airport-meta">THRUST SETTING: ${rwy.querySelector("thrust_setting")?.textContent}</div>
+  <div class="airport-meta">FLEX TEMP: ${rwy.querySelector("flex_temperature")?.textContent} °C</div>
+  <div class="airport-meta">V1: ${rwy.querySelector("speeds_v1")?.textContent} kts / VR: ${rwy.querySelector("speeds_vr")?.textContent} kts / V2: ${rwy.querySelector("speeds_v2")?.textContent} kts / ${rwy.querySelector("speeds_other_id")?.textContent}: ${rwy.querySelector("speeds_other")?.textContent} kts</div>
+  <br>
+  <div class="airport-meta">Decision distance: ${rwy.querySelector("distance_decide")?.textContent} m / Stop distance: ${rwy.querySelector("distance_reject")?.textContent} m / Margin: ${rwy.querySelector("distance_margin")?.textContent} m</div>
+  <br>
+  <div class="airport-meta">THR REDUCTION & ENG OUT ACC: ${thrustReduction} ft</div>
+  <div class="airport-meta">ACCELERATION (for NADP1): ${acceleration} ft</div>
+  <div class="airport-meta">ACCELERATION (for NADP2): ${acceleration2} ft</div>
 `;
 }
 
@@ -351,30 +377,33 @@ function landingPerformanceHtml(root) {
   const factoredNum = parseInt(factoredStr.replace(/[^0-9]/g, ''), 10);
   const margin = ldaNum - factoredNum;
 
+  const aircraftName = `${textOf(root, "aircraft icao_code")} ${textOf(root, "aircraft engines")}`;
+  const weightVal = formatWeight(root, cond.querySelector("planned_weight")?.textContent);
+  const metarVal = textOf(root, "destination metar");
+
   return `
-<div class="airport-meta">RUNWAY: ${rwy.querySelector("identifier")?.textContent}</div>
-<div class="airport-meta">HEADWIND: ${rwy.querySelector("headwind_component")?.textContent} kts</div>
-<div class="airport-meta">CROSSWIND: ${rwy.querySelector("crosswind_component")?.textContent} kts</div>
-<div class="airport-meta">SURFACE: ${surface}</div>
-<div class="airport-meta">TEMP: ${cond.querySelector("temperature")?.textContent} °C</div>
-<div class="airport-meta">QNH: ${altimeterToHpa(qnhRaw)}</div>
-<br>
-<div class="airport-meta">ILS FRQ: ${rwy.querySelector("ils_frequency")?.textContent} mHz</div>
-<div class="airport-meta">MAX ELEV TDZ: ${rwy.querySelector("elevation")?.textContent} ft</div>
-<div class="airport-meta">DECISION HEIGHT: CHECK CHARTS</div>
-<div class="airport-meta">TRANS LEVEL: ${transitionLevel}</div>
-<br>
-<div class="airport-meta">Be Aware: the Transition Level given above is a calculated value to be used when ATC is not available.</div>
-<hr class="section-separator">
-<p class="airport-meta">With the following data...</p>
-<div class="airport-meta">FLAPS: ${distanceNode.querySelector("flap_setting")?.textContent}</div>
-<div class="airport-meta">BRAKES: ${distanceNode.querySelector("brake_setting")?.textContent}</div>
-<div class="airport-meta">VREF: ${distanceNode.querySelector("speeds_vref")?.textContent} kts</div>
-<p class="airport-meta">Resulting distances will be...</p>
-<div class="airport-meta">LDA: ${rwy.querySelector("length_lda")?.textContent} m</div>
-<div class="airport-meta">ACTUAL NEEDED DISTANCE: ${distanceNode.querySelector("actual_distance")?.textContent} m</div>
-<div class="airport-meta">FACTORED DISTANCE: ${distanceNode.querySelector("factored_distance")?.textContent} m</div>
-<div class="airport-meta">MARGIN: ${margin} m</div>
+  <div class="airport-meta"></div>
+  <div class="airport-meta"><b>INPUTS (RUNWAY)</b></div>
+  <div class="airport-meta">RUNWAY: ${rwy.querySelector("identifier")?.textContent} / LDA: ${rwy.querySelector("length_lda")?.textContent} m / ASDA: ${rwy.querySelector("length_asda")?.textContent} m / Elevation: ${rwy.querySelector("elevation")?.textContent} ft / Gradient: ${rwy.querySelector("gradient")?.textContent}%</div>
+  <div class="airport-meta">METAR: ${metarVal}</div>
+  <br>
+  <div class="airport-meta">HEADWIND: ${rwy.querySelector("headwind_component")?.textContent} kts / CROSSWIND: ${rwy.querySelector("crosswind_component")?.textContent} kts / SURFACE: ${surface}</div>
+  <div class="airport-meta">TEMP: ${cond.querySelector("temperature")?.textContent} °C / QNH: ${altimeterToHpa(qnhRaw)}</div>
+  <hr class="section-separator">
+  <div class="airport-meta"><b>INPUTS (AIRCRAFT)</b></div>
+  <div class="airport-meta">Aircraft: ${aircraftName} / Weight: ${weightVal}</div>
+  <div class="airport-meta"><b>Standard Aircraft Config:</b></div>
+  <div class="airport-meta">FLAPS: ${distanceNode.querySelector("flap_setting")?.textContent} / BRAKING: ${distanceNode.querySelector("brake_setting")?.textContent} / REVERSER CREDIT: ${distanceNode.querySelector("reverser_credit")?.textContent}</div>
+  <hr class="section-separator">
+  <div class="airport-meta"><b>OUTPUT</b></div>
+  <div class="airport-meta">Vref : ${distanceNode.querySelector("speeds_vref")?.textContent} kts</div>
+  <div class="airport-meta">Actual distance: ${distanceNode.querySelector("actual_distance")?.textContent} m / Factored distance: ${distanceNode.querySelector("factored_distance")?.textContent} m / Margin: ${margin} m</div>
+  <br>
+  <div class="airport-meta">ILS FRQ: ${rwy.querySelector("ils_frequency")?.textContent} mHz</div>
+  <br>
+  <div class="airport-meta">DECISION ALT (BARO): CHECK CHARTS for: <br>Vref 121-141 kts = CAT C <br>Vref 141-166 kts = CAT D<br>Use RADIO/Decision Height for CAT II/III</div>
+  <br>
+  <div class="airport-meta">TRANS LEVEL<br>If charts say "BY ATC", but ATC not available, use following calculated value: ${transitionLevel}</div>
 `;
 }
 
@@ -536,26 +565,31 @@ function flightTypeText(type) {
 function mainInfo(root) {
   setRows("main-info-flight", [
     { label: "Flight Number/Callsign", value: `${textOf(root, "general icao_airline")}${textOf(root, "general flight_number")}/${textOf(root, "atc callsign")}` },
-    { label: "Aircraft", value: textOf(root, "aircraft icao_code") },
+    { label: "Aircraft", value: `${textOf(root, "aircraft icao_code")} (${textOf(root, "aircraft reg")})`},
     { label: "OFP Date/Time", value: formatEpochUtc(textOf(root, "params time_generated")) },
     { label: "OFP Version", value: textOf(root, "general release") },
     { label: "AIRAC", value: textOf(root, "params airac") },
-    { label: "Flight Type", value: flightTypeText(textOf(root, "api_params flighttype")) }
+    { label: "Flight Type", value: flightTypeText(textOf(root, "api_params flighttype")) },
+    { label: "Equipment", value: `${textOf(root, "aircraft equip_navigation")}/${textOf(root, "aircraft equip_transponder")}` },
+    { label: "SELCAL", value: textOf(root, "aircraft selcal") }
   ]);
 
 setRows("main-info-airports", [
-    { label: "Departure", value: `${airportCode(root, "origin")}<br><small style="font-size: 11px;">${textOf(root, "origin name")}</small>` },
-    { label: "Destination", value: `${airportCode(root, "destination")}<br><small style="font-size: 11px;">${textOf(root, "destination name")}</small>` },
-    { label: "TKOF ALTN", value: `${airportCode(root, "takeoff_altn")}<br><small style="font-size: 11px;">${textOf(root, "takeoff_altn name")}</small>` },
-    { label: "ENR ALTN", value: `${enrouteAltCode(root)}` },
-    { label: "ALTN", value: `${airportCode(root, "alternate")}<br><small style="font-size: 11px;">${textOf(root, "alternate name")}</small>` }
+    { label: "Departure", value: `${airportCode(root, "origin")}<br><small style="font-size: 0.9rem;">${textOf(root, "origin name")}</small>` },
+    { label: "Destination", value: `${airportCode(root, "destination")}<br><small style="font-size: 0.9rem;">${textOf(root, "destination name")}</small>` },
+    { label: "DEP ALTN", value: `${airportCode(root, "takeoff_altn")}<br><small style="font-size: 0.9rem;">${textOf(root, "takeoff_altn name")}</small>` },
+    { label: "ENR ALTN", value: `${enrouteAltCode(root)}<br><small style="font-size: 0.9rem;">${textOf(root, "enroute_altn name")}</small>` },
+    { label: "ARR ALTN", value: `${airportCode(root, "alternate")}<br><small style="font-size: 0.9rem;">${textOf(root, "alternate name")}</small>` }
   ]);
 
   setRows("main-info-ops", [
-    { label: "Departure Date/Time", value: departureDateTime(root) },
-    { label: "Block Fuel", value: withUnit(textOf(root, "fuel plan_ramp"), textOf(root, "params units")) },
+    
     { label: "Block Time", value: formatDuration(textOf(root, "times est_block")) },
-    { label: "Route Distance", value: withUnit(textOf(root, "general route_distance"), "NM") }
+    { label: "Route Distance", value: withUnit(textOf(root, "general route_distance"), "NM") },
+
+    { label: "Block Fuel", value: withUnit(textOf(root, "fuel plan_ramp"), textOf(root, "params units")) },
+
+    { label: "PAX", value: textOf(root, "general passengers") }
   ]);
 }
 
@@ -565,9 +599,9 @@ function fplan(root) {
   const cards = [];
   cards.push(airportCard("DEP", airportData(root, "origin"), depRunway));
   cards.push(airportCard("DEST", airportData(root, "destination"), arrRunway));
-  cards.push(airportCard("TKOF ALTN", airportData(root, "takeoff_altn")));
+  cards.push(airportCard("DEP ALTN", airportData(root, "takeoff_altn")));
   cards.push(airportCard("ENR ALTN", enrouteAltData(root)));
-  cards.push(airportCard("ALTN", airportData(root, "alternate")));
+  cards.push(airportCard("ARR ALTN", airportData(root, "alternate")));
   const apiAltRaw = textOf(root, "api_params altn");
   const apiAlternates = apiAltRaw === "-" ? [] : apiAltRaw.split(/\s+/).filter(Boolean);
   const uniqueApiAlternates = [...new Set(apiAlternates)];
@@ -578,16 +612,16 @@ function fplan(root) {
   setHtml("fplan-airports", cards.join(""));
 
   setRows("fplan-grid", [
-    { label: "Route", value: `<b>${textOf(root, "origin icao_code")}/${textOf(root, "origin plan_rwy")}</b> ${textOf(root, "general route_ifps")} <b>${textOf(root, "destination icao_code")}/${textOf(root, "destination plan_rwy")}</b>`},
-    { label: "CRZ FL", value: `Initial: ${textOf(root, "general initial_altitude")} FT (Steps: ${textOf(root, "general stepclimb_string")})`},
+    { label: "Route", value: `<span style="color: #00c3ff;">${textOf(root, "origin icao_code")}/${textOf(root, "origin plan_rwy")}</span> ${textOf(root, "general route_ifps")} <span style="color: #00c3ff;">${textOf(root, "destination icao_code")}/${textOf(root, "destination plan_rwy")}</span>`},
+    { label: "CRZ FL", value: `Initial: ${textOf(root, "general initial_altitude")} FT <br>(Steps: ${textOf(root, "general stepclimb_string")})`},
     { label: "ALTN Route", value: `${textOf(root, "alternate route_ifps")} ${textOf(root, "alternate icao_code")}/${textOf(root, "alternate plan_rwy")}`},
     { label: "ALTN INFO", value: `${textOf(root, "alternate distance")} NM, ${textOf(root, "alternate cruise_altitude")} FT, ${formatDuration(textOf(root, "alternate ete"))}`},
     { label: "AVG WIND",value: `ROUTE: ${formatWindWithUnit(textOf(root, "general avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "general avg_wind_spd"), "KT")} = COMP: ${formatWindWithUnit(normalizePlusPrefix(textOf(root, "general avg_wind_comp")), "KT")}<br>ALTN: ${formatWindWithUnit(textOf(root, "alternate avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "alternate avg_wind_spd"), "KT")} = COMP: ${formatWindWithUnit(normalizePlusPrefix(textOf(root, "alternate avg_wind_comp")), "KT")}`},    
     { label: "TROPO", value: `ENR AVG: ${withUnit(textOf(root, "general avg_tropopause"), "FT (ALTN AVG: ")}${withUnit(textOf(root, "alternate avg_tropopause")," FT)")}<br>ENR lowest: ${minTropoFromFixes(root)}` },
     { label: "HIGHEST MORA", value: maxMoraFromFixes(root) },
-    { label: "AVG CRZ TEMP", value: cruiseAverageTemp(root) },
-    { label: "AVG ISA DEV", value: normalizePlusPrefix(textOf(root, "general avg_temp_dev")) },
-    { label: "CI", value: `${textOf(root, "general costindex")}` },
+    { label: "AVG CRZ TEMPERATURE", value: cruiseAverageTemp(root) },
+    { label: "COST INDEX", value: `${textOf(root, "general costindex")}` },
+    { label: "AVG ISA DEVIATION", value: normalizePlusPrefix(textOf(root, "general avg_temp_dev")) },
   ]);
 }
 
@@ -654,7 +688,7 @@ function loadsheet(root) {
     { label: "Cargo (baggage)", value: withUnit(textOf(root, "weights cargo"), textOf(root, "params units")) },
     { label: "Bag weight (as set on simbrief)", value: withUnit(textOf(root, "weights bag_weight"), textOf(root, "params units")) },
     { label: "Freight", value: withUnit(textOf(root, "weights freight_added"), textOf(root, "params units")) },
-    { label: "Total Payload (excluding freight)", value: withUnit(textOf(root, "weights payload"), textOf(root, "params units")) }
+    { label: "Payload (excluding freight)", value: withUnit(textOf(root, "weights payload"), textOf(root, "params units")) }
   ]);
 
   const estZfw = numberOf(root, "weights est_zfw");
@@ -697,14 +731,11 @@ function atcSection(root) {
   if (!pdfContainer) {
     pdfContainer = document.createElement('div');
     pdfContainer.id = pdfContainerId;
-    pdfContainer.style.maxHeight = '350px';
-    pdfContainer.style.overflow = 'auto';
-    pdfContainer.style.marginTop = '10px';
     atcText.insertAdjacentElement('afterend', pdfContainer);
   }
   if (filesDir && filesDir !== '-' && pdfLink && pdfLink !== '-') {
     const full = filesDir.replace(/\/$/, '') + '/' + pdfLink.replace(/^\//, '');
-    pdfContainer.innerHTML = `<iframe src="${full}" style="width:100%; height:350px; border:0;" title="ATC Flightplan PDF"></iframe>`;
+    pdfContainer.innerHTML = `<iframe src="${full}" title="ATC Flightplan PDF"></iframe>`;
   } else {
     pdfContainer.innerHTML = '';
   }
@@ -716,19 +747,19 @@ function atcSection(root) {
     const apocLink = textOf(root, "prefile apoc link");
     let buttons = "";
     if (ivaoLink !== "-") {
-      buttons += `<a class="atc-link" style="border: 1px solid white;" href="${ivaoLink}" target="_blank" rel="noopener noreferrer">Create IVAO FPL</a>`;
+      buttons += `<a class="atc-link" style="border: 0px;" href="${ivaoLink}" target="_blank" rel="noopener noreferrer">Create IVAO FPL</a>`;
     }
     if (vatsimLink !== "-") {
-      buttons += `<a class="atc-link" style="border: 1px solid white;" href="${vatsimLink}" target="_blank" rel="noopener noreferrer">Create VATSIM FPL</a>`;
+      buttons += `<a class="atc-link" style="border: 0px;" href="${vatsimLink}" target="_blank" rel="noopener noreferrer">Create VATSIM FPL</a>`;
     }
     if (posconLink !== "-") {
-      buttons += `<a class="atc-link" style="border: 1px solid white;" href="${posconLink}" target="_blank" rel="noopener noreferrer">Create POSCON FPL</a>`;
+      buttons += `<a class="atc-link" style="border: 0px;" href="${posconLink}" target="_blank" rel="noopener noreferrer">Create POSCON FPL</a>`;
     }
     if (pilotedgeLink !== "-") {
-      buttons += `<a class="atc-link" style="border: 1px solid white;" href="${pilotedgeLink}" target="_blank" rel="noopener noreferrer">Create PilotEdge FPL</a>`;
+      buttons += `<a class="atc-link" style="border: 0px;" href="${pilotedgeLink}" target="_blank" rel="noopener noreferrer">Create PilotEdge FPL</a>`;
     }
     if (apocLink !== "-") {
-      buttons += `<a class="atc-link" style="border: 1px solid white;" href="${apocLink}" target="_blank" rel="noopener noreferrer">Create APOC FPL</a>`;
+      buttons += `<a class="atc-link" style="border: 0px;" href="${apocLink}" target="_blank" rel="noopener noreferrer">Create APOC FPL</a>`;
     }
     atcActions.innerHTML = buttons;
   }
@@ -1015,7 +1046,7 @@ function linkifyCoordinates(text) {
     
     if (latH === 'S') lat *= -1;
     if (lonH === 'W') lon *= -1;
-    return `${match} <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" class="notam-map-link"><span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">moved_location</span> View on Google Maps</a>`;
+    return `${match} <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lon}" target="_blank" class="notam-map-link"><span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">moved_location</span> View on Google Maps</a>`;
   });
 }
 
@@ -1080,11 +1111,14 @@ function initFlightMap(root) {
   const originLon = textOf(root, "origin pos_long");
   flightMap = L.map('map').setView([originLat, originLon], 5);
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 20
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19
   }).addTo(flightMap);
+
+  const radarPane = flightMap.createPane('radarPane');
+  radarPane.style.zIndex = 250;
+  radarPane.style.pointerEvents = 'none';
 
   const waypoints = root.querySelectorAll("navlog fix");
   const routeCoords = [];
@@ -1097,7 +1131,7 @@ function initFlightMap(root) {
 
       const ident = textOf(fix, "ident");
       const timeTotal = formatDuration(textOf(fix, "time_total"));
-const efob = textOf(fix, "fuel_plan_onboard"); 
+      const efob = textOf(fix, "fuel_plan_onboard"); 
       const oat = textOf(fix, "oat");
       const windDir = textOf(fix, "wind_dir");
       const windSpd = textOf(fix, "wind_spd");
@@ -1105,10 +1139,13 @@ const efob = textOf(fix, "fuel_plan_onboard");
       const mora = textOf(fix, "mora");
 
       L.circleMarker([lat, lon], { 
-        radius: 4, 
-        color: '#ffffff', 
-        fillColor: '#ffffff', 
-        fillOpacity: 1 
+        radius: 6,
+        color: '#000000',
+        fillColor: '#000000',
+        fillOpacity: 1,
+        opacity: 1,
+        weight: 2,
+        interactive: true
       })
       .bindTooltip(`
         <div class="map-tooltip-wide">
@@ -1125,9 +1162,10 @@ const efob = textOf(fix, "fuel_plan_onboard");
     }
   });
 
-  L.polyline(routeCoords, { color: '#ffffff', weight: 2, opacity: 0.8 }).addTo(flightMap);
+  L.polyline(routeCoords, { color: '#000000', weight: 4, opacity: 1, interactive: false }).addTo(flightMap);
 
   drawNotamsOnMap(root);
+  initRainViewerRadar();
 }
 
 function drawNotamsOnMap(root) {
@@ -1149,19 +1187,30 @@ function drawNotamsOnMap(root) {
 
     if (coordsFound.length === 0) return;
 
-    const color = n.relevance === 'critical' ? '#ff6b6b' : '#ffffff';
+    const color = n.relevance === 'critical' ? '#b60000' : '#000000';
     const tooltipHtml = `<div class="map-tooltip-notam"><b>${n.id}</b>: ${formatNotamText(n.text)}</div>`;
     let shape;
 
     if (coordsFound.length > 1) {
       shape = L.polygon(coordsFound, {
-        color: color, fillColor: color, fillOpacity: 0.2, weight: 2
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.2,
+        weight: 5,
+        opacity: 1,
+        interactive: true
       }).addTo(flightMap);
     } else {
       const radiusMatch = n.text.match(radiusRegex);
       const radiusValue = radiusMatch ? parseInt(radiusMatch[1]) : 1000; 
       shape = L.circle(coordsFound[0], {
-        color: color, fillColor: color, fillOpacity: 0.2, radius: radiusValue, weight: 1
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.2,
+        radius: radiusValue,
+        weight: 7,
+        opacity: 1,
+        interactive: true
       }).addTo(flightMap);
     }
 
@@ -1421,28 +1470,18 @@ function calculateTOD() {
 
   if (selectedFix && Array.isArray(window.simbriefNavlogDistances) && window.simbriefNavlogDistances.length > 0 && roundedTod > 0) {
     const targetIndex = window.simbriefNavlogDistances.findIndex(f => f.ident === selectedFix);
+    
     if (targetIndex !== -1) {
-      let accumulatedBack = 0;
-      let currentIdx = targetIndex;
-      let finalFixName = selectedFix;
-      let lastLegDistance = 0;
+      const navlog = window.simbriefNavlogDistances;
+      const targetFixObj = navlog[targetIndex];
+      const airportFixObj = navlog[navlog.length - 1];
 
-      while (currentIdx >= 0) {
-        const currentFix = window.simbriefNavlogDistances[currentIdx];
-        const prevDist = currentIdx > 0 ? window.simbriefNavlogDistances[currentIdx - 1].cumDist : 0;
-        const legDistance = currentFix.cumDist - prevDist;
+      const distFromTargetToAirport = airportFixObj.cumDist - targetFixObj.cumDist;
+      const totalFromAirport = roundedTod + distFromTargetToAirport;
 
-        if (currentFix.ident === 'TOD') break;
-
-        accumulatedBack += legDistance;
-        lastLegDistance = legDistance;
-        finalFixName = currentFix.ident;
-        currentIdx--;
+      if (todGeoResult) {
+        todGeoResult.textContent = `${totalFromAirport.toFixed(1)} NM before the arrival airport (${airportFixObj.ident})`;
       }
-
-      const remainingToTod = roundedTod - accumulatedBack;
-      const milesBefore = Math.max(0, remainingToTod + lastLegDistance).toFixed(1);
-      if (todGeoResult) todGeoResult.textContent = `Or ${milesBefore} NM before ${finalFixName}, target being ${targetAlt}ft at ${selectedFix}`;
     } else {
       if (todGeoResult) todGeoResult.textContent = "";
     }
@@ -1472,28 +1511,48 @@ function calculateDescentPrediction() {
 
   updateWindText('pred-wind-text', windComponent);
 
-  const altToDescend = currentAlt - targetAlt;
+  const altDifference = Math.abs(currentAlt - targetAlt);
+  const isClimb = targetAlt > currentAlt;
+
   const predTimeResult = document.getElementById('pred-time-result');
   const predDistResult = document.getElementById('pred-dist-result');
+  const predAngleResult = document.getElementById('pred-angle-result');
+  const predAvgGsResult = document.getElementById('pred-avg-gs-result');
+  const predFinalGsResult = document.getElementById('pred-final-gs-result');
 
-  if (altToDescend <= 0 || vs <= 0) {
+  if (altDifference === 0 || vs <= 0 || startGs <= 0) {
     if (predTimeResult) predTimeResult.textContent = "00:00";
     if (predDistResult) predDistResult.textContent = "0";
+    if (predAngleResult) predAngleResult.textContent = "0";
+    if (predAvgGsResult) predAvgGsResult.textContent = "0";
+    if (predFinalGsResult) predFinalGsResult.textContent = "0";
     return;
   }
 
-  const totalMinutes = altToDescend / vs;
+  const totalMinutes = altDifference / vs;
   const hrs = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
   const mins = String(Math.floor(totalMinutes % 60)).padStart(2, '0');
   const secs = String(Math.round((totalMinutes % 1) * 60)).padStart(2, '0');
   if (predTimeResult) predTimeResult.textContent = parseInt(hrs) > 0 ? `${hrs}:${mins}:${secs}` : `${mins}:${secs}`;
 
-  const altLossThousands = altToDescend / 1000;
-  const averageGsCorrection = (altLossThousands / 2) * 7;
-  const estimatedAvgGs = startGs - averageGsCorrection + windComponent;
+  const altThousands = altDifference / 1000;
+  const totalGsChange = altThousands * 7;
+  const gsSign = isClimb ? 1 : -1;
 
-  const distance = (Math.max(100, estimatedAvgGs) * totalMinutes) / 60;
+  const effectiveStartGs = startGs + windComponent;
+  const estimatedAvgGs = effectiveStartGs + (gsSign * (totalGsChange / 2));
+  const estimatedFinalGs = effectiveStartGs + (gsSign * totalGsChange);
+
+  const safeAvgGs = Math.max(10, estimatedAvgGs);
+  const distance = (safeAvgGs * totalMinutes) / 60;
+
+  const feetPerNm = altDifference / distance;
+  const slopeAngle = Math.atan(feetPerNm / 6076.12) * (180 / Math.PI);
+
   if (predDistResult) predDistResult.textContent = Math.round(distance);
+  if (predAngleResult) predAngleResult.textContent = slopeAngle.toFixed(1);
+  if (predAvgGsResult) predAvgGsResult.textContent = Math.round(estimatedAvgGs);
+  if (predFinalGsResult) predFinalGsResult.textContent = Math.round(estimatedFinalGs);
 }
 
 function calculateVsPrediction() {
@@ -1512,19 +1571,43 @@ function calculateVsPrediction() {
   const effectiveGs = rawGs + windComponent;
   const altToDescend = currentAlt - targetAlt;
 
-  const altLossThousands = altToDescend / 1000;
-  const averageGsCorrection = (altLossThousands / 2) * 7;
-  const estimatedAvgGs = effectiveGs - averageGsCorrection;
-
   const vsRateResult = document.getElementById('vs-rate-result');
-  if (altToDescend <= 0 || dist <= 0 || estimatedAvgGs <= 0) {
+  const vsAvgGsResult = document.getElementById('vs-avg-gs-result');
+  const vsFinalGsResult = document.getElementById('vs-final-gs-result');
+  const vsAngleResult = document.getElementById('vs-angle-result');
+
+  if (altToDescend <= 0 || dist <= 0 || effectiveGs <= 0) {
     if (vsRateResult) vsRateResult.textContent = "0";
+    if (vsAvgGsResult) vsAvgGsResult.textContent = "0";
+    if (vsFinalGsResult) vsFinalGsResult.textContent = "0";
+    if (vsAngleResult) vsAngleResult.textContent = "0";
+    return;
+  }
+
+  const altLossThousands = altToDescend / 1000;
+  const totalGsLoss = altLossThousands * 7;
+  const averageGsCorrection = totalGsLoss / 2;
+  const estimatedAvgGs = effectiveGs - averageGsCorrection;
+  const estimatedFinalGs = effectiveGs - totalGsLoss;
+
+  if (estimatedAvgGs <= 0) {
+    if (vsRateResult) vsRateResult.textContent = "0";
+    if (vsAvgGsResult) vsAvgGsResult.textContent = "0";
+    if (vsFinalGsResult) vsFinalGsResult.textContent = "0";
+    if (vsAngleResult) vsAngleResult.textContent = "0";
     return;
   }
 
   const timeToTargetMinutes = (dist / estimatedAvgGs) * 60;
   const requiredVs = altToDescend / timeToTargetMinutes;
+
+  const feetPerNm = altToDescend / dist;
+  const glideslopeAngle = Math.atan(feetPerNm / 6076.12) * (180 / Math.PI);
+
   if (vsRateResult) vsRateResult.textContent = Math.round(requiredVs);
+  if (vsAvgGsResult) vsAvgGsResult.textContent = Math.round(estimatedAvgGs);
+  if (vsFinalGsResult) vsFinalGsResult.textContent = Math.round(estimatedFinalGs);
+  if (vsAngleResult) vsAngleResult.textContent = glideslopeAngle.toFixed(1);
 }
 
 function calculateETP() {
@@ -1537,10 +1620,12 @@ function calculateETP() {
   const gsContinue = tas + h;
 
   const etpResultEl = document.getElementById('etp-result');
+  const etpTimeResultEl = document.getElementById('etp-time-result');
   const etpGeoResultEl = document.getElementById('etp-geo-result');
 
   if (d <= 0 || gsReturn <= 0 || gsContinue <= 0) {
     if (etpResultEl) etpResultEl.textContent = "0";
+    if (etpTimeResultEl) etpTimeResultEl.textContent = "00:00";
     if (etpGeoResultEl) etpGeoResultEl.textContent = "";
     return;
   }
@@ -1548,6 +1633,7 @@ function calculateETP() {
   const distanceFromA = (d * gsReturn) / (gsContinue + gsReturn);
   const roundedEtp = Math.round(distanceFromA);
   if (etpResultEl) etpResultEl.textContent = roundedEtp;
+  if (etpTimeResultEl) etpTimeResultEl.textContent = formatDuration((distanceFromA / tas) * 3600);
 
   if (Array.isArray(window.simbriefNavlogDistances) && window.simbriefNavlogDistances.length > 0) {
     const targetFix = window.simbriefNavlogDistances.find(fix => fix.cumDist >= roundedEtp);
@@ -1638,3 +1724,125 @@ document.getElementById('legs-chain')?.addEventListener('input', () => {
   } catch (e) { if (legsResult) legsResult.textContent = '0'; }
 });
 
+let radarFrames = [];
+let currentFrameIndex = 0;
+let radarLayer = null;
+let radarInterval = null;
+
+async function initRainViewerRadar() {
+  const radarToggle = document.getElementById('radar-toggle');
+  const radarPanel = document.getElementById('radar-panel');
+  const prevBtn = document.getElementById('radar-prev-btn');
+  const playBtn = document.getElementById('radar-play-btn');
+  const nextBtn = document.getElementById('radar-next-btn');
+
+  if (!radarToggle) return;
+
+  radarToggle.addEventListener('change', async (e) => {
+    if (e.target.checked) {
+      radarPanel.style.display = 'flex';
+      if (radarFrames.length === 0) {
+        await loadRadarData();
+      }
+      if (radarFrames.length > 0) {
+        showFrame(currentFrameIndex);
+      }
+    } else {
+      radarPanel.style.display = 'none';
+      stopRadarAnimation();
+      if (radarLayer && flightMap.hasLayer(radarLayer)) {
+        flightMap.removeLayer(radarLayer);
+      }
+    }
+  });
+
+  prevBtn.addEventListener('click', () => {
+    if (radarFrames.length === 0) return;
+    stopRadarAnimation();
+    currentFrameIndex = (currentFrameIndex - 1 + radarFrames.length) % radarFrames.length;
+    showFrame(currentFrameIndex);
+  });
+
+  nextBtn.addEventListener('click', () => {
+    if (radarFrames.length === 0) return;
+    stopRadarAnimation();
+    currentFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
+    showFrame(currentFrameIndex);
+  });
+
+  playBtn.addEventListener('click', () => {
+    if (radarInterval) {
+      stopRadarAnimation();
+    } else {
+      startRadarAnimation();
+    }
+  });
+}
+
+async function loadRadarData() {
+  try {
+    const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+    if (!response.ok) {
+      throw new Error(`RainViewer HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    radarFrames = [...(data.radar?.past || []), ...(data.radar?.nowcast || [])];
+    if (radarFrames.length > 0) {
+      currentFrameIndex = radarFrames.length - 1;
+    }
+  } catch (err) {
+    console.error("Error al cargar datos de RainViewer:", err);
+  }
+}
+
+function showFrame(index) {
+  if (!radarFrames[index] || !flightMap) return;
+
+  const frame = radarFrames[index];
+  const tileUrl = `https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+
+  if (radarLayer && flightMap.hasLayer(radarLayer)) {
+    flightMap.removeLayer(radarLayer);
+  }
+
+  radarLayer = L.tileLayer(tileUrl, {
+    opacity: 0.6,
+    tileSize: 256,
+    maxZoom: 19,
+    pane: 'radarPane',
+    interactive: false
+  }).addTo(flightMap);
+
+  const timestampElem = document.getElementById('radar-timestamp');
+  if (timestampElem) {
+    const date = new Date(frame.time * 1000);
+    timestampElem.textContent = `${date.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'UTC'
+    })} UTC`;
+  }
+}
+
+function startRadarAnimation() {
+  const playBtn = document.getElementById('radar-play-btn');
+  if (radarFrames.length === 0) return;
+  stopRadarAnimation();
+  if (playBtn) playBtn.textContent = '⏸';
+  radarInterval = setInterval(() => {
+    currentFrameIndex = (currentFrameIndex + 1) % radarFrames.length;
+    showFrame(currentFrameIndex);
+  }, 1000);
+}
+
+function stopRadarAnimation() {
+  const playBtn = document.getElementById('radar-play-btn');
+  if (playBtn) playBtn.textContent = '▶';
+  
+  if (radarInterval) {
+    clearInterval(radarInterval);
+    radarInterval = null;
+  }
+}
