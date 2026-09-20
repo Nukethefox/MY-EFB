@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <script src="script.js" defer></script>
+  <script src="metar-taf-decoder.js" defer></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="app-shell">
@@ -15,6 +16,7 @@
 <nav class="sidebar-nav">
     <a href="#section-main"><span class="material-symbols-outlined">info</span><label>Main Info</label></a>
     <a href="#section-fplan"><span class="material-symbols-outlined">flight_takeoff</span><label>Flight Plan</label></a>
+    <a href="#section-airports"><span class="material-symbols-outlined">air</span><label>Airports</label></a>
     <a href="#section-winds"><span class="material-symbols-outlined">directions</span><label>Waypoints</label></a>
     <a href="#section-loadsheet"><span class="material-symbols-outlined">balance</span><label>Loadsheet</label></a>
     <a href="#section-perf"><span class="material-symbols-outlined">speed</span><label>Performance</label></a>
@@ -59,9 +61,32 @@
     <section id="section-fplan" class="panel full-screen">
       <h2>Flightplan Breakdown</h2>
       <div class="grid cols-2" id="fplan-grid"></div>
+    </section>
+
+    <section id="section-airports" class="panel full-screen">
+      <h2>Airports Info</h2>
+      <div class="fplan-airports" id="fplan-airports" style="padding: 10px;"></div>
+      <p style="text-align: center; color: var(--muted);">The previous weather reports are based on the OFP creation time</p>
       <details class="winds-wrap" style="margin-top: 15px;">
-        <summary class="winds-toggle">Airports Info</summary>
-        <div class="fplan-airports" id="fplan-airports" style="padding: 10px;"></div>
+        <summary class="winds-toggle">METAR & TAF Decoder, with updated reports</summary>
+        <div class="metar-taf-decoder-grid" id="metar-taf-decoder">
+          <article class="weather-decoder-column">
+            <h3>METAR Decoder</h3>
+            <div class="weather-query-controls">
+              <input id="metar-airport-input" class="weather-airport-input" data-weather-type="metar" type="text" inputmode="text" maxlength="4" autocomplete="off" spellcheck="false" aria-label="METAR ICAO airport" placeholder="ICAO code">
+              <button type="button" id="metar-apply-btn" class="weather-apply-btn">Apply</button>
+            </div>
+            <div id="metar-decoder-output" class="weather-decoder-output"></div>
+          </article>
+          <article class="weather-decoder-column">
+            <h3>TAF Decoder</h3>
+            <div class="weather-query-controls">
+              <input id="taf-airport-input" class="weather-airport-input" data-weather-type="taf" type="text" inputmode="text" maxlength="4" autocomplete="off" spellcheck="false" aria-label="TAF ICAO airport" placeholder="ICAO code">
+              <button type="button" id="taf-apply-btn" class="weather-apply-btn">Apply</button>
+            </div>
+            <div id="taf-decoder-output" class="weather-decoder-output"></div>
+          </article>
+        </div>
       </details>
     </section>
 
@@ -221,6 +246,7 @@
 
     <section id="section-impacts" class="panel full-screen">
       <h2>Cruise impacts</h2>
+      <p style="text-align: center; color: var(--muted);">Time shown as hours:minutes:seconds</p>
       <div class="impacts-grid" id="impacts-grid"></div>
     </section>
 
