@@ -287,8 +287,7 @@ function formatSignedDuration(valueInSeconds) {
   const hours = Math.floor(absSeconds / 3600);
   const minutes = Math.floor((absSeconds % 3600) / 60);
   const seconds = absSeconds % 60;
-  if (hours > 0) return `${sign}${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  return `${sign}${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  return `${sign}${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function altimeterToHpa(inhg) {
@@ -332,8 +331,8 @@ function takeoffPerformanceHtml(root) {
   return `
   <div class="airport-meta"><b>INPUTS (RUNWAY)</b></div>
   <div class="airport-meta">RUNWAY: ${rwy.querySelector("identifier")?.textContent} / TORA: ${rwy.querySelector("length_tora")?.textContent} m / ASDA: ${rwy.querySelector("length_asda")?.textContent} m / Gradient: ${rwy.querySelector("gradient")?.textContent}%</div>
-  <div class="airport-meta">METAR: ${metarVal}</div>
   <br>
+  <div class="airport-meta">METAR used to calculate: ${metarVal}</div>
   <div class="airport-meta">HEADWIND: ${rwy.querySelector("headwind_component")?.textContent} kts / CROSSWIND: ${rwy.querySelector("crosswind_component")?.textContent} kts / SURFACE: ${cond.querySelector("surface_condition")?.textContent}</div>
   <div class="airport-meta">TEMP: ${cond.querySelector("temperature")?.textContent} °C / QNH: ${altimeterToHpa(cond.querySelector("altimeter")?.textContent)} </div>
   <hr class="section-separator">
@@ -387,8 +386,8 @@ function landingPerformanceHtml(root) {
   <div class="airport-meta"></div>
   <div class="airport-meta"><b>INPUTS (RUNWAY)</b></div>
   <div class="airport-meta">RUNWAY: ${rwy.querySelector("identifier")?.textContent} / LDA: ${rwy.querySelector("length_lda")?.textContent} m / ASDA: ${rwy.querySelector("length_asda")?.textContent} m / Elevation: ${rwy.querySelector("elevation")?.textContent} ft / Gradient: ${rwy.querySelector("gradient")?.textContent}%</div>
-  <div class="airport-meta">METAR: ${metarVal}</div>
   <br>
+  <div class="airport-meta">METAR used to calculate: ${metarVal}</div>
   <div class="airport-meta">HEADWIND: ${rwy.querySelector("headwind_component")?.textContent} kts / CROSSWIND: ${rwy.querySelector("crosswind_component")?.textContent} kts / SURFACE: ${surface}</div>
   <div class="airport-meta">TEMP: ${cond.querySelector("temperature")?.textContent} °C / QNH: ${altimeterToHpa(qnhRaw)}</div>
   <hr class="section-separator">
@@ -614,12 +613,12 @@ function fplan(root) {
   setHtml("fplan-airports", cards.join(""));
 
   setRows("fplan-grid", [
-    { label: "Route", value: `<span style="color: #00c3ff;">${textOf(root, "origin icao_code")}/${textOf(root, "origin plan_rwy")}</span> ${textOf(root, "general route_ifps")} <span style="color: #00c3ff;">${textOf(root, "destination icao_code")}/${textOf(root, "destination plan_rwy")}</span>`},
+    { label: "Route", value: `<span style="color: #00c3ff;">${textOf(root, "origin icao_code")}/${textOf(root, "origin plan_rwy")}</span> ${routeIfpsHtml(root)} <span style="color: #00c3ff;">${textOf(root, "destination icao_code")}/${textOf(root, "destination plan_rwy")}</span>`},
     { label: "CRZ FL", value: `Initial: ${textOf(root, "general initial_altitude")} FT <br>(Steps: ${textOf(root, "general stepclimb_string")})`},
-    { label: "ALTN Route", value: `${textOf(root, "alternate route_ifps")} ${textOf(root, "alternate icao_code")}/${textOf(root, "alternate plan_rwy")}`},
+    { label: "ALTN Route", value: `${textOf(root, "alternate route_ifps")} <span style="color: #00c3ff;">${textOf(root, "alternate icao_code")}/${textOf(root, "alternate plan_rwy")}</span>  `},
     { label: "ALTN INFO", value: `${textOf(root, "alternate distance")} NM, ${textOf(root, "alternate cruise_altitude")} FT, ${formatDuration(textOf(root, "alternate ete"))}`},
     { label: "AVG WIND",value: `ROUTE: ${formatWindWithUnit(textOf(root, "general avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "general avg_wind_spd"), "KT")} = COMP: ${formatWindWithUnit(normalizePlusPrefix(textOf(root, "general avg_wind_comp")), "KT")}<br>ALTN: ${formatWindWithUnit(textOf(root, "alternate avg_wind_dir"),"º")} / ${formatWindWithUnit(textOf(root, "alternate avg_wind_spd"), "KT")} = COMP: ${formatWindWithUnit(normalizePlusPrefix(textOf(root, "alternate avg_wind_comp")), "KT")}`},    
-    { label: "TROPO", value: `ENR AVG: ${withUnit(textOf(root, "general avg_tropopause"), "FT (ALTN AVG: ")}${withUnit(textOf(root, "alternate avg_tropopause")," FT)")}<br>ENR lowest: ${minTropoFromFixes(root)}` },
+    { label: "TROPO", value: `ENR: Average = ${withUnit(textOf(root, "general avg_tropopause"), "FT")}, Lowest = ${minTropoFromFixes(root)}<br>ALTN: Average = ${withUnit(textOf(root, "alternate avg_tropopause"), "FT")}` },
     { label: "HIGHEST MORA", value: maxMoraFromFixes(root) },
     { label: "AVG CRZ TEMPERATURE", value: cruiseAverageTemp(root) },
     { label: "COST INDEX", value: `${textOf(root, "general costindex")}` },
@@ -635,6 +634,32 @@ function normalizePlusPrefix(raw) {
   if (!Number.isFinite(n)) return v;
   if (n > 0) return `P${v}`;
   return v;
+}
+
+function routeIfpsHtml(root) {
+  const route = textOf(root, "general route_ifps");
+  if (route === "-") return "-";
+
+  const tokens = route.split(/\s+/).filter(Boolean);
+  const sidIdent = textOf(root, "general sid_ident");
+  const starIdent = textOf(root, "general star_ident");
+  let sidIndex = tokens.indexOf(sidIdent);
+  let starIndex = tokens.indexOf(starIdent);
+
+  if (sidIndex < 0 && sidIdent !== "-") {
+    sidIndex = tokens.findIndex((token) => !/^[NAV]\d{3,4}[FK]\d{2,3}$/i.test(token));
+  }
+
+  if (starIndex < 0 && starIdent !== "-") {
+    starIndex = tokens.length - 1;
+  }
+
+  return tokens.map((token, index) => {
+    if (index === sidIndex || index === starIndex) {
+      return `<span style="color: #00c3ff;">${token}</span>`;
+    }
+    return token;
+  }).join(" ");
 }
 
 function timeline(root) {
@@ -1300,6 +1325,9 @@ function renderDashboard() {
   }
   mainInfo(xml);
   fplan(xml);
+  if (typeof initMetarTafDecoder === "function") {
+    initMetarTafDecoder(xml);
+  }
   timeline(xml);
   loadsheet(xml);
   atcSection(xml);
